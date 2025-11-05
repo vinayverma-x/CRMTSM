@@ -18,7 +18,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
       {/* Header */}
       <DashboardHeader
         sidebarOpen={sidebarOpen}
@@ -28,23 +28,33 @@ export default function DashboardPage() {
         onSignOut={handleSignOut}
       />
 
-      <div className="flex">
+      <div className="flex flex-col lg:flex-row">
         {/* Main Content */}
-        <main className="flex-1">
-          <div className="p-4 md:p-8">
+        <main className="flex-1 w-full overflow-x-hidden">
+          <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
             {/* Summary Cards */}
-            <SummaryCards />
+            <div className="transition-all duration-300 ease-in-out">
+              <SummaryCards />
+            </div>
 
             {/* Charts and Tables Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-              <div className="lg:col-span-2">
-                <AdmissionsTrendChart />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 transition-all duration-300 ease-in-out">
+              <div className="lg:col-span-2 w-full">
+                <div className="transition-all duration-300 ease-in-out hover:scale-[1.01]">
+                  <AdmissionsTrendChart />
+                </div>
               </div>
-              <div className="lg:col-span-1">{!notificationsOpen && <NotificationsPanel isCompact={true} />}</div>
+              <div className="lg:col-span-1 w-full">
+                {!notificationsOpen && (
+                  <div className="transition-all duration-300 ease-in-out">
+                    <NotificationsPanel isCompact={true} />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Recent Leads Table */}
-            <div className="mt-8">
+            <div className="transition-all duration-300 ease-in-out">
               <RecentLeadsTable />
             </div>
           </div>
@@ -52,7 +62,7 @@ export default function DashboardPage() {
 
         {/* Notifications Sidebar */}
         {notificationsOpen && (
-          <div className="hidden lg:block w-80 border-l border-border bg-card">
+          <div className="hidden lg:block w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-border bg-card transition-all duration-300 ease-in-out">
             <NotificationsPanel isCompact={false} />
           </div>
         )}

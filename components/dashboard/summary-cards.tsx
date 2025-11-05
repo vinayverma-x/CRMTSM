@@ -35,27 +35,27 @@ const summaryData = [
 
 export default function SummaryCards() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
       {summaryData.map((item, index) => {
         const Icon = item.icon
         return (
           <div
             key={index}
-            className="bg-card border border-border rounded-lg p-6 hover:border-primary/20 transition-colors"
+            className="bg-card border border-border rounded-xl p-5 sm:p-6 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:scale-[1.02]"
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-muted-foreground text-sm font-medium mb-1">{item.title}</p>
-                <p className="text-2xl font-bold text-foreground">{item.value}</p>
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-muted-foreground text-xs sm:text-sm font-medium mb-2 truncate">{item.title}</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground truncate">{item.value}</p>
               </div>
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Icon className="w-5 h-5 text-primary" />
+              <div className="p-2 sm:p-2.5 bg-primary/10 rounded-lg flex-shrink-0 ml-3 transition-all duration-300 hover:bg-primary/20">
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
             </div>
-            <div className="mt-4">
+            <div className="mt-4 pt-4 border-t border-border/50">
               <span
-                className={`text-xs font-semibold ${
-                  item.changeType === "positive" ? "text-green-600" : "text-orange-600"
+                className={`text-xs sm:text-sm font-semibold ${
+                  item.changeType === "positive" ? "text-green-600 dark:text-green-400" : "text-orange-600 dark:text-orange-400"
                 }`}
               >
                 {item.change} from last month

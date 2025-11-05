@@ -62,39 +62,57 @@ const getStatusColor = (status: string) => {
 
 export default function RecentLeadsTable() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Leads</CardTitle>
-        <CardDescription>Latest leads and their enrollment status</CardDescription>
+    <Card className="transition-all duration-300 ease-in-out hover:shadow-lg">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg sm:text-xl">Recent Leads</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">Latest leads and their enrollment status</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Assigned Counselor</TableHead>
-                <TableHead>Last Contact</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {leadsData.map((lead) => (
-                <TableRow key={lead.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">{lead.name}</TableCell>
-                  <TableCell>{lead.course}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(lead.status)}>{lead.status}</Badge>
-                  </TableCell>
-                  <TableCell>{lead.counselor}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(lead.lastContact).toLocaleDateString()}
-                  </TableCell>
+      <CardContent className="pt-0">
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-border">
+                  <TableHead className="text-xs sm:text-sm font-semibold text-foreground">Name</TableHead>
+                  <TableHead className="text-xs sm:text-sm font-semibold text-foreground hidden sm:table-cell">Course</TableHead>
+                  <TableHead className="text-xs sm:text-sm font-semibold text-foreground">Status</TableHead>
+                  <TableHead className="text-xs sm:text-sm font-semibold text-foreground hidden md:table-cell">Counselor</TableHead>
+                  <TableHead className="text-xs sm:text-sm font-semibold text-foreground hidden lg:table-cell">Last Contact</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {leadsData.map((lead) => (
+                  <TableRow 
+                    key={lead.id} 
+                    className="hover:bg-muted/50 transition-colors duration-200 border-b border-border/50"
+                  >
+                    <TableCell className="font-medium text-sm sm:text-base py-3 sm:py-4">
+                      <div className="flex flex-col">
+                        <span>{lead.name}</span>
+                        <span className="text-xs text-muted-foreground sm:hidden mt-1">{lead.course}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm sm:text-base py-3 sm:py-4 hidden sm:table-cell">
+                      {lead.course}
+                    </TableCell>
+                    <TableCell className="py-3 sm:py-4">
+                      <Badge className={`${getStatusColor(lead.status)} text-xs px-2 py-1`}>
+                        {lead.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm sm:text-base py-3 sm:py-4 hidden md:table-cell">
+                      <div className="max-w-[150px] truncate" title={lead.counselor}>
+                        {lead.counselor}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs sm:text-sm py-3 sm:py-4 hidden lg:table-cell">
+                      {new Date(lead.lastContact).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </CardContent>
     </Card>

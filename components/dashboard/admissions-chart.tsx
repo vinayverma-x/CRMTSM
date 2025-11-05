@@ -20,42 +20,66 @@ const chartData = [
 
 export default function AdmissionsTrendChart() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Monthly Admissions Trend</CardTitle>
-        <CardDescription>Admissions vs. target over the past year</CardDescription>
+    <Card className="transition-all duration-300 ease-in-out hover:shadow-lg">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg sm:text-xl">Monthly Admissions Trend</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">Admissions vs. target over the past year</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="h-80">
+      <CardContent className="pt-0">
+        <div className="h-64 sm:h-72 lg:h-80 w-full transition-all duration-300 ease-in-out">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-              <XAxis dataKey="month" stroke="var(--color-muted-foreground)" />
-              <YAxis stroke="var(--color-muted-foreground)" />
+            <LineChart 
+              data={chartData} 
+              margin={{ 
+                top: 10, 
+                right: 10, 
+                left: -10, 
+                bottom: 10 
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.3} />
+              <XAxis 
+                dataKey="month" 
+                stroke="var(--color-muted-foreground)" 
+                tick={{ fontSize: 12 }}
+                tickMargin={8}
+              />
+              <YAxis 
+                stroke="var(--color-muted-foreground)" 
+                tick={{ fontSize: 12 }}
+                tickMargin={8}
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "var(--color-card)",
                   border: "1px solid var(--color-border)",
                   borderRadius: "8px",
+                  padding: "8px 12px",
+                  fontSize: "12px",
                 }}
-                labelStyle={{ color: "var(--color-foreground)" }}
+                labelStyle={{ color: "var(--color-foreground)", fontSize: "12px" }}
+                itemStyle={{ fontSize: "12px" }}
               />
-              <Legend />
+              <Legend 
+                wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
+              />
               <Line
                 type="monotone"
                 dataKey="admissions"
                 stroke="var(--color-primary)"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 dot={{ fill: "var(--color-primary)", r: 4 }}
+                activeDot={{ r: 6 }}
                 name="Admissions"
               />
               <Line
                 type="monotone"
                 dataKey="target"
                 stroke="var(--color-muted-foreground)"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 strokeDasharray="5 5"
                 dot={{ fill: "var(--color-muted-foreground)", r: 4 }}
+                activeDot={{ r: 6 }}
                 name="Target"
               />
             </LineChart>
