@@ -19,48 +19,113 @@ export default function DashboardHeader({
   onSignOut,
 }: DashboardHeaderProps) {
   return (
-    <header className="border-b border-border bg-card/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm transition-all duration-300 ease-in-out">
-      <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
-        {/* Logo and Title */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="relative h-10 w-10 sm:h-12 sm:w-auto flex-shrink-0">
-            <Image 
-              src="/tsm-logo.png" 
-              alt="TSM University" 
-              width={100} 
-              height={50} 
-              priority 
-              className="h-full w-auto object-contain" 
+    <>
+      {/* ✅ MOBILE HEADER (only visible on small screens) */}
+      <header
+        className={`md:hidden ${
+          sidebarOpen ? "block" : "hidden"
+        } border-b border-border bg-card/95 backdrop-blur-sm  z-50 shadow-sm`}
+      >
+        <div className="px-4 py-3 flex items-center justify-between">
+          {/* Logo */}
+          <div className="h-10 flex-shrink-0">
+            <Image
+              src="/tsm-logo.png"
+              alt="TSM University"
+              width={120}
+              height={60}
+              priority
+              className="h-full w-auto object-contain"
             />
           </div>
-          <div className="hidden sm:block border-l border-border pl-3">
-            <h1 className="text-foreground font-semibold text-sm sm:text-base">TSM CRM</h1>
-            <p className="text-muted-foreground text-xs">University Management</p>
+
+          {/* Right Side */}
+          <div className="flex items-center gap-3">
+            {/* Notification Button */}
+            <button
+              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              className="relative p-2 hover:bg-muted rounded-lg transition-all duration-200 ease-in-out hover:scale-105 active:scale-95"
+              aria-label="Notifications"
+            >
+              <Bell className="w-5 h-5 text-foreground" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full animate-pulse"></span>
+            </button>
+
+            {/* Sign Out */}
+            <button
+              onClick={onSignOut}
+              className="flex items-center gap-1.5 px-2.5 py-2 hover:bg-destructive/10 text-destructive rounded-lg transition-all duration-200 ease-in-out text-sm font-medium hover:scale-105 active:scale-95"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
           </div>
         </div>
+      </header>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-          {/* Notifications Button */}
-          <button
-            onClick={() => setNotificationsOpen(!notificationsOpen)}
-            className="relative p-2 sm:p-2.5 hover:bg-muted rounded-lg transition-all duration-200 ease-in-out hover:scale-105 active:scale-95"
-            aria-label="Notifications"
-          >
-            <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-foreground" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full animate-pulse"></span>
-          </button>
+      {/* ✅ DESKTOP HEADER (always visible from md and up) */}
+      <header className="hidden md:block border-b border-border bg-card/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm transition-all duration-300 ease-in-out">
+        <div className="px-6 lg:px-8 py-4 flex items-center justify-between">
+          {/* Left */}
+          <div className="flex items-center gap-4">
+            <div className="relative h-12 w-auto flex-shrink-0">
+              <Image
+                src="/tsm-logo.png"
+                alt="TSM University"
+                width={120}
+                height={60}
+                priority
+                className="h-full w-auto object-contain"
+              />
+            </div>
 
-          {/* Sign Out Button */}
-          <button
-            onClick={onSignOut}
-            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 hover:bg-destructive/10 text-destructive rounded-lg transition-all duration-200 ease-in-out text-xs sm:text-sm font-medium hover:scale-105 active:scale-95"
-          >
-            <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Sign Out</span>
-          </button>
+            {/* University + CRM Info */}
+            {!sidebarOpen && (
+              <>
+                <div className="flex flex-col gap-0.5">
+                  <h2 className="text-foreground font-serif text-base lg:text-lg leading-tight tracking-tight">
+                    T.S. MISHRA
+                  </h2>
+                  <div className="bg-foreground/90 text-card px-2 py-0.5 rounded text-xs font-semibold w-fit">
+                    UNIVERSITY
+                  </div>
+                </div>
+
+                <div className="w-px h-8 bg-border mx-3"></div>
+
+                <div>
+                  <h1 className="text-foreground font-semibold text-sm lg:text-base leading-tight">
+                    TSM CRM
+                  </h1>
+                  <p className="text-muted-foreground text-xs leading-tight">
+                    University Management
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Right */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              className="relative p-2 hover:bg-muted rounded-lg transition-all duration-200 ease-in-out hover:scale-105 active:scale-95"
+              aria-label="Notifications"
+            >
+              <Bell className="w-5 h-5 text-foreground" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full animate-pulse"></span>
+            </button>
+
+            <button
+              onClick={onSignOut}
+              className="flex items-center gap-2 px-3 py-2 hover:bg-destructive/10 text-destructive rounded-lg transition-all duration-200 ease-in-out text-sm font-medium hover:scale-105 active:scale-95"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out</span>
+            </button>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   )
 }
