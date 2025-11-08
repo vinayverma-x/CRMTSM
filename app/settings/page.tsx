@@ -1,324 +1,461 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import { Card } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { getCurrentUser, dummySystemSettings, setCurrentUser } from "@/lib/data/dummy-data"
+import { User, SystemSettings } from "@/lib/types"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Upload, Lock, Mail, MessageSquare } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { Upload, Lock, Mail, Settings as SettingsIcon, Building2, Key, Palette, Bell } from "lucide-react"
+import { toast } from "sonner"
 
 export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState("institute")
-  const [saveMessage, setSaveMessage] = useState("")
-  const [formData, setFormData] = useState({
-    instituteName: "T.S. Mishra University",
-    address: "123 University Road, Delhi, India",
-    phone: "+91-11-12345678",
-    email: "admin@tsm.edu",
-    emailApi: "sendgrid",
-    emailApiKey: "••••••••••••••••",
-    whatsappApi: "twilio",
-    whatsappApiKey: "••••••••••••••••",
-    reminderTemplate: "Hi {name}, this is a reminder about {task}. Please complete it by {date}.",
+  const router = useRouter()
+  const [currentUser, setCurrentUserState] = useState<User | null>(null)
+  const [systemSettings, setSystemSettings] = useState<SystemSettings>(dummySystemSettings)
+  const [profileData, setProfileData] = useState({
+    name: "",
+    email: "",
+    phone: "",
     newPassword: "",
     confirmPassword: "",
   })
 
-  const sections = [
-    { id: "institute", label: "Institute Information", icon: "🏛️" },
-    { id: "api", label: "API Integrations", icon: "⚙️" },
-    { id: "templates", label: "Message Templates", icon: "📝" },
-    { id: "profile", label: "Profile Settings", icon: "👤" },
-  ]
+  useEffect(() => {
+    const user = getCurrentUser()
+    setCurrentUserState(user)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    if (!user) {
+      router.push("/")
+      return
+    }
+
+    setProfileData({
+      name: user.name,
+      email: user.email,
+      phone: user.phone || "",
+      newPassword: "",
+      confirmPassword: "",
+    })
+  }, [router])
+
+  const handleSystemSettingsUpdate = () => {
+    toast.success("System settings updated successfully")
   }
 
-  const handleSave = () => {
-    setSaveMessage("Settings saved successfully!")
-    setTimeout(() => setSaveMessage(""), 3000)
+  const handleProfileUpdate = () => {
+    if (profileData.newPassword && profileData.newPassword !== profileData.confirmPassword) {
+      toast.error("Passwords do not match")
+      return
+    }
+    toast.success("Profile updated successfully")
   }
+
+  const isSuperAdmin = currentUser?.role === "SUPER_ADMIN"
+  const isAdmin = currentUser?.role === "ADMIN"
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-blue-900 mb-2">Settings</h1>
-          <p className="text-gray-600">Manage your university CRM configuration</p>
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Sidebar Navigation */}
-          <div className="md:w-64">
-            <Card className="shadow-lg p-0 overflow-hidden">
-              <nav className="flex md:flex-col">
-                {sections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`w-full text-left px-6 py-4 font-medium transition-all ${
-                      activeSection === section.id
-                        ? "bg-blue-600 text-white border-l-4 border-blue-700"
-                        : "text-gray-700 hover:bg-gray-50 border-l-4 border-transparent"
-                    }`}
-                  >
-                    <span className="mr-2">{section.icon}</span>
-                    <span className="hidden md:inline">{section.label}</span>
-                  </button>
-                ))}
-              </nav>
-            </Card>
-          </div>
-
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Institute Information */}
-            {activeSection === "institute" && (
-              <Card className="p-8 shadow-lg">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Institute Information</h2>
-                <div className="space-y-6">
-                  <div>
-                    <Label htmlFor="instituteName">Institute Name</Label>
-                    <Input
-                      id="instituteName"
-                      name="instituteName"
-                      value={formData.instituteName}
-                      onChange={handleChange}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleChange}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} className="mt-2" />
-                    </div>
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="mt-2"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Logo Upload</Label>
-                    <div className="mt-2 flex items-center gap-4">
-                      <div className="px-6 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors cursor-pointer">
-                        <Upload className="w-5 h-5 text-gray-400 mr-2 inline" />
-                        Click to upload logo
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* API Integrations */}
-            {activeSection === "api" && (
-              <Card className="p-8 shadow-lg">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">API Integrations</h2>
-                <div className="space-y-8">
-                  <div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <Mail className="w-5 h-5 text-blue-600" />
-                      <h3 className="text-lg font-semibold text-gray-900">Email API</h3>
-                    </div>
-                    <div className="space-y-4 pl-7">
-                      <div>
-                        <Label htmlFor="emailApi">Email Provider</Label>
-                        <select
-                          id="emailApi"
-                          name="emailApi"
-                          value={formData.emailApi}
-                          onChange={handleChange}
-                          className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500"
-                        >
-                          <option>SendGrid</option>
-                          <option>Mailgun</option>
-                          <option>AWS SES</option>
-                          <option>Gmail API</option>
-                        </select>
-                      </div>
-                      <div>
-                        <Label htmlFor="emailApiKey">API Key</Label>
-                        <Input
-                          id="emailApiKey"
-                          name="emailApiKey"
-                          type="password"
-                          value={formData.emailApiKey}
-                          onChange={handleChange}
-                          className="mt-2"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-8">
-                    <div className="flex items-center gap-2 mb-4">
-                      <MessageSquare className="w-5 h-5 text-green-600" />
-                      <h3 className="text-lg font-semibold text-gray-900">WhatsApp API</h3>
-                    </div>
-                    <div className="space-y-4 pl-7">
-                      <div>
-                        <Label htmlFor="whatsappApi">WhatsApp Provider</Label>
-                        <select
-                          id="whatsappApi"
-                          name="whatsappApi"
-                          value={formData.whatsappApi}
-                          onChange={handleChange}
-                          className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500"
-                        >
-                          <option>Twilio</option>
-                          <option>Twilio Business</option>
-                          <option>WhatsApp Cloud API</option>
-                          <option>Nexmo</option>
-                        </select>
-                      </div>
-                      <div>
-                        <Label htmlFor="whatsappApiKey">API Key</Label>
-                        <Input
-                          id="whatsappApiKey"
-                          name="whatsappApiKey"
-                          type="password"
-                          value={formData.whatsappApiKey}
-                          onChange={handleChange}
-                          className="mt-2"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Message Templates */}
-            {activeSection === "templates" && (
-              <Card className="p-8 shadow-lg">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Message Templates</h2>
-                <div className="space-y-6">
-                  <div>
-                    <Label htmlFor="reminderTemplate">Reminder Message Template</Label>
-                    <textarea
-                      id="reminderTemplate"
-                      name="reminderTemplate"
-                      value={formData.reminderTemplate}
-                      onChange={handleChange}
-                      rows={4}
-                      className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <p className="text-sm text-gray-600 mt-2">
-                      Use variables: {"{name}"}, {"{task}"}, {"{date}"}, {"{course}"}
-                    </p>
-                  </div>
-
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <p className="text-sm font-semibold text-gray-900 mb-2">Preview:</p>
-                    <p className="text-sm text-gray-700 italic">
-                      {formData.reminderTemplate
-                        .replace("{name}", "Raj Kumar")
-                        .replace("{task}", "Admission Form Submission")
-                        .replace("{date}", "2024-11-15")
-                        .replace("{course}", "B.Tech Computer Science")}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Profile Settings */}
-            {activeSection === "profile" && (
-              <Card className="p-8 shadow-lg">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile Settings</h2>
-                <div className="space-y-6">
-                  <div>
-                    <Label>Profile Photo</Label>
-                    <div className="mt-4 flex items-center gap-6">
-                      <img
-                        src="/admin-profile.png"
-                        alt="Profile"
-                        className="w-20 h-20 rounded-full object-cover"
-                      />
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Change Photo
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <Lock className="w-5 h-5" />
-                      Change Password
-                    </h3>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="newPassword">New Password</Label>
-                        <Input
-                          id="newPassword"
-                          name="newPassword"
-                          type="password"
-                          value={formData.newPassword}
-                          onChange={handleChange}
-                          placeholder="Enter new password"
-                          className="mt-2"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="confirmPassword">Confirm Password</Label>
-                        <Input
-                          id="confirmPassword"
-                          name="confirmPassword"
-                          type="password"
-                          value={formData.confirmPassword}
-                          onChange={handleChange}
-                          placeholder="Confirm new password"
-                          className="mt-2"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Save Button */}
-            <div className="mt-8 flex justify-end gap-4">
-              <Button variant="outline" className="text-gray-700 bg-transparent">
-                Cancel
-              </Button>
-              <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
-                Save Changes
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Save Message Toast */}
-        {saveMessage && (
-          <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-pulse">
-            {saveMessage}
-          </div>
-        )}
+    <>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+        <p className="text-muted-foreground mt-1">Manage your account and system configuration</p>
       </div>
-    </div>
+
+      <Tabs defaultValue={isSuperAdmin ? "system" : "profile"} className="space-y-6">
+        <TabsList>
+          {isSuperAdmin && (
+            <>
+              <TabsTrigger value="system">
+                <SettingsIcon className="h-4 w-4 mr-2" />
+                System Settings
+              </TabsTrigger>
+              <TabsTrigger value="api">
+                <Key className="h-4 w-4 mr-2" />
+                API Keys
+              </TabsTrigger>
+            </>
+          )}
+          <TabsTrigger value="profile">
+            <Lock className="h-4 w-4 mr-2" />
+            Profile
+          </TabsTrigger>
+        </TabsList>
+
+        {/* System Settings - Super Admin Only */}
+        {isSuperAdmin && (
+          <TabsContent value="system" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  University Information
+                </CardTitle>
+                <CardDescription>Update university branding and information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="universityName">University Name</Label>
+                  <Input
+                    id="universityName"
+                    value={systemSettings.universityName}
+                    onChange={(e) =>
+                      setSystemSettings({ ...systemSettings, universityName: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Logo</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 h-20 border-2 border-dashed border-border rounded-lg flex items-center justify-center">
+                      <img src={systemSettings.logo || "/tsm-logo.png"} alt="Logo" className="max-w-full max-h-full" />
+                    </div>
+                    <Button variant="outline" className="gap-2">
+                      <Upload className="h-4 w-4" />
+                      Upload Logo
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="theme">Theme</Label>
+                  <select
+                    id="theme"
+                    value={systemSettings.theme}
+                    onChange={(e) =>
+                      setSystemSettings({
+                        ...systemSettings,
+                        theme: e.target.value as "light" | "dark" | "auto",
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                  >
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="auto">Auto</option>
+                  </select>
+                </div>
+                <Button onClick={handleSystemSettingsUpdate}>Save Changes</Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Features
+                </CardTitle>
+                <CardDescription>Enable or disable system features</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Chatbot</Label>
+                    <p className="text-sm text-muted-foreground">Enable AI chatbot feature</p>
+                  </div>
+                  <Switch
+                    checked={systemSettings.features.chatbot}
+                    onCheckedChange={(checked) =>
+                      setSystemSettings({
+                        ...systemSettings,
+                        features: { ...systemSettings.features, chatbot: checked },
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Notifications</Label>
+                    <p className="text-sm text-muted-foreground">Enable push notifications</p>
+                  </div>
+                  <Switch
+                    checked={systemSettings.features.notifications}
+                    onCheckedChange={(checked) =>
+                      setSystemSettings({
+                        ...systemSettings,
+                        features: { ...systemSettings.features, notifications: checked },
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Reports</Label>
+                    <p className="text-sm text-muted-foreground">Enable reporting features</p>
+                  </div>
+                  <Switch
+                    checked={systemSettings.features.reports}
+                    onCheckedChange={(checked) =>
+                      setSystemSettings({
+                        ...systemSettings,
+                        features: { ...systemSettings.features, reports: checked },
+                      })
+                    }
+                  />
+                </div>
+                <Button onClick={handleSystemSettingsUpdate}>Save Changes</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* API Keys - Super Admin Only */}
+        {isSuperAdmin && (
+          <TabsContent value="api" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="h-5 w-5" />
+                  API Keys & Integrations
+                </CardTitle>
+                <CardDescription>Manage API keys for external services</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold">Email API</h3>
+                  </div>
+                  <div className="space-y-2 pl-7">
+                    <Label htmlFor="emailKey">Email API Key</Label>
+                    <Input
+                      id="emailKey"
+                      type="password"
+                      value={systemSettings.apiKeys?.email || "••••••••"}
+                      onChange={(e) =>
+                        setSystemSettings({
+                          ...systemSettings,
+                          apiKeys: { ...systemSettings.apiKeys, email: e.target.value },
+                        })
+                      }
+                      placeholder="Enter email API key"
+                    />
+                  </div>
+                </div>
+
+                <div className="border-t pt-6 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold">SMS API</h3>
+                  </div>
+                  <div className="space-y-2 pl-7">
+                    <Label htmlFor="smsKey">SMS API Key</Label>
+                    <Input
+                      id="smsKey"
+                      type="password"
+                      value={systemSettings.apiKeys?.sms || "••••••••"}
+                      onChange={(e) =>
+                        setSystemSettings({
+                          ...systemSettings,
+                          apiKeys: { ...systemSettings.apiKeys, sms: e.target.value },
+                        })
+                      }
+                      placeholder="Enter SMS API key"
+                    />
+                  </div>
+                </div>
+
+                <div className="border-t pt-6 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Key className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold">Payment API</h3>
+                  </div>
+                  <div className="space-y-2 pl-7">
+                    <Label htmlFor="paymentKey">Payment API Key</Label>
+                    <Input
+                      id="paymentKey"
+                      type="password"
+                      value={systemSettings.apiKeys?.payment || "••••••••"}
+                      onChange={(e) =>
+                        setSystemSettings({
+                          ...systemSettings,
+                          apiKeys: { ...systemSettings.apiKeys, payment: e.target.value },
+                        })
+                      }
+                      placeholder="Enter payment API key"
+                    />
+                  </div>
+                </div>
+
+                <Button onClick={handleSystemSettingsUpdate}>Save API Keys</Button>
+              </CardContent>
+            </Card>
+
+            {/* API Access Panel */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="h-5 w-5" />
+                  API Access & Webhooks
+                </CardTitle>
+                <CardDescription>Manage API access and webhook integrations</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label>API Base URL</Label>
+                    <Input value="https://api.tsm-crm.university/v1" readOnly className="mt-1 font-mono text-sm" />
+                    <p className="text-xs text-muted-foreground mt-1">Use this URL for all API requests</p>
+                  </div>
+
+                  <div>
+                    <Label>API Access Token</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input value="tsm_crm_••••••••••••••••" readOnly className="font-mono text-sm" />
+                      <Button variant="outline" size="sm">Generate New</Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Keep this token secure. It provides full API access.</p>
+                  </div>
+
+                  <div>
+                    <Label>Webhook URL</Label>
+                    <Input
+                      placeholder="https://your-webhook-url.com/webhook"
+                      className="mt-1 font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Receive real-time updates via webhooks</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Supported Integrations</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="flex items-center gap-2 p-2 border border-border rounded">
+                        <span className="text-sm">Google Sheets</span>
+                        <Badge variant="outline" className="ml-auto">Enabled</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 border border-border rounded">
+                        <span className="text-sm">Zapier</span>
+                        <Badge variant="outline" className="ml-auto">Enabled</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 border border-border rounded">
+                        <span className="text-sm">HubSpot</span>
+                        <Badge variant="outline" className="ml-auto">Available</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 border border-border rounded">
+                        <span className="text-sm">Slack</span>
+                        <Badge variant="outline" className="ml-auto">Available</Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Rate Limits</Label>
+                    <div className="mt-2 space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Requests per minute:</span>
+                        <span className="font-medium">100</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Requests per hour:</span>
+                        <span className="font-medium">5,000</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Requests per day:</span>
+                        <span className="font-medium">50,000</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button onClick={handleSystemSettingsUpdate}>Save API Settings</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* Profile Settings - All Users */}
+        <TabsContent value="profile" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile Information</CardTitle>
+              <CardDescription>Update your personal information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-6">
+                <div className="w-20 h-20 rounded-full border-2 border-border flex items-center justify-center bg-muted">
+                  <span className="text-2xl font-bold text-primary">
+                    {currentUser?.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2) || "U"}
+                  </span>
+                </div>
+                <Button variant="outline" className="gap-2">
+                  <Upload className="h-4 w-4" />
+                  Change Photo
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={profileData.name}
+                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={profileData.email}
+                  onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={profileData.phone}
+                  onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                />
+              </div>
+              <Button onClick={handleProfileUpdate}>Update Profile</Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" />
+                Change Password
+              </CardTitle>
+              <CardDescription>Update your password to keep your account secure</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={profileData.newPassword}
+                  onChange={(e) => setProfileData({ ...profileData, newPassword: e.target.value })}
+                  placeholder="Enter new password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={profileData.confirmPassword}
+                  onChange={(e) => setProfileData({ ...profileData, confirmPassword: e.target.value })}
+                  placeholder="Confirm new password"
+                />
+              </div>
+              <Button onClick={handleProfileUpdate}>Change Password</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </>
   )
 }

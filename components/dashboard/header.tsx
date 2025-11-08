@@ -24,16 +24,16 @@ export default function DashboardHeader({
       <header
         className={`md:hidden ${
           sidebarOpen ? "block" : "hidden"
-        } border-b border-border bg-card/95 backdrop-blur-sm  z-50 shadow-sm`}
+        } border-b border-border bg-card/95 backdrop-blur-sm z-50 shadow-sm`}
       >
         <div className="px-4 py-3 flex items-center justify-between">
           {/* Logo */}
-          <div className="h-10 flex-shrink-0">
+          <div className="h-12 flex-shrink-0">
             <Image
               src="/tsm-logo.png"
               alt="TSM University"
-              width={120}
-              height={60}
+              width={160}
+              height={80}
               priority
               className="h-full w-auto object-contain"
             />
@@ -66,43 +66,18 @@ export default function DashboardHeader({
       {/* ✅ DESKTOP HEADER (always visible from md and up) */}
       <header className="hidden md:block border-b border-border bg-card/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm transition-all duration-300 ease-in-out">
         <div className="px-6 lg:px-8 py-4 flex items-center justify-between">
-          {/* Left */}
-          <div className="flex items-center gap-4">
-            <div className="relative h-12 w-auto flex-shrink-0">
+          {/* Left - Logo Only */}
+          <div className="flex items-center">
+            <div className="relative h-14 w-auto flex-shrink-0">
               <Image
                 src="/tsm-logo.png"
                 alt="TSM University"
-                width={120}
-                height={60}
+                width={180}
+                height={90}
                 priority
                 className="h-full w-auto object-contain"
               />
             </div>
-
-            {/* University + CRM Info */}
-            {!sidebarOpen && (
-              <>
-                <div className="flex flex-col gap-0.5">
-                  <h2 className="text-foreground font-serif text-base lg:text-lg leading-tight tracking-tight">
-                    T.S. MISHRA
-                  </h2>
-                  <div className="bg-foreground/90 text-card px-2 py-0.5 rounded text-xs font-semibold w-fit">
-                    UNIVERSITY
-                  </div>
-                </div>
-
-                <div className="w-px h-8 bg-border mx-3"></div>
-
-                <div>
-                  <h1 className="text-foreground font-semibold text-sm lg:text-base leading-tight">
-                    TSM CRM
-                  </h1>
-                  <p className="text-muted-foreground text-xs leading-tight">
-                    University Management
-                  </p>
-                </div>
-              </>
-            )}
           </div>
 
           {/* Right */}

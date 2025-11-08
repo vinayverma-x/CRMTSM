@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Search, Menu, X, LogOut, Settings, User, Bell } from "lucide-react"
@@ -14,6 +14,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
+import { getCurrentUser, setCurrentUser } from "@/lib/data/dummy-data"
+import { User as UserType } from "@/lib/types"
+import { Badge } from "@/components/ui/badge"
 
 interface NavbarProps {
   onSidebarToggle: () => void
@@ -23,9 +26,31 @@ interface NavbarProps {
 export function Navbar({ onSidebarToggle, sidebarOpen }: NavbarProps) {
   const router = useRouter()
   const [searchValue, setSearchValue] = useState("")
+  const [currentUser, setCurrentUserState] = useState<UserType | null>(null)
+
+  useEffect(() => {
+    const user = getCurrentUser()
+    setCurrentUserState(user)
+  }, [])
 
   const handleLogout = () => {
+    setCurrentUser(null)
     router.push("/")
+  }
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case "SUPER_ADMIN":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+      case "ADMIN":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+      case "COUNSELOR":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+      case "STUDENT":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+    }
   }
 
   const handleSearch = (e: React.FormEvent) => {
@@ -50,13 +75,16 @@ export function Navbar({ onSidebarToggle, sidebarOpen }: NavbarProps) {
             )}
           </button>
 
-          <Link href="/dashboard" className="hidden sm:flex items-center gap-3 flex-shrink-0 group">
-            <div className="relative h-9 w-9 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow duration-300">
-              <Image src="/tsm-logo.png" alt="TSM" width={32} height={32} className="h-7 w-auto opacity-100" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-primary text-base leading-none">TSM CRM</span>
-              <span className="text-xs text-muted-foreground">University</span>
+          <Link href="/dashboard" className="flex items-center flex-shrink-0 group">
+            <div className="relative h-10 sm:h-12 w-auto">
+              <Image 
+                src="/tsm-logo.png" 
+                alt="TSM University" 
+                width={140} 
+                height={70} 
+                priority
+                className="h-full w-auto object-contain" 
+              />
             </div>
           </Link>
         </div>
@@ -77,11 +105,6 @@ export function Navbar({ onSidebarToggle, sidebarOpen }: NavbarProps) {
 
         {/* Right: Actions and Profile */}
         <div className="flex items-center gap-3 sm:gap-4">
-          {/* Mobile Search Button */}
-          <button className="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors duration-200">
-            <Search className="h-5 w-5 text-muted-foreground" />
-          </button>
-
           <button className="hidden sm:flex relative p-2 rounded-lg hover:bg-secondary transition-colors duration-200 group">
             <Bell className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
@@ -91,18 +114,42 @@ export function Navbar({ onSidebarToggle, sidebarOpen }: NavbarProps) {
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary transition-colors duration-200 cursor-pointer group">
                 <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all duration-200">
-                  <span className="text-xs font-bold text-primary">AD</span>
+                  <span className="text-xs font-bold text-primary">
+                    {currentUser?.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2) || "U"}
+                  </span>
                 </div>
                 <div className="hidden sm:flex flex-col items-start">
-                  <span className="text-sm font-semibold text-foreground leading-none">Admin</span>
-                  <span className="text-xs text-muted-foreground">Administrator</span>
+                  <span className="text-sm font-semibold text-foreground leading-none">
+                    {currentUser?.name || "User"}
+                  </span>
+                  {currentUser && (
+                    <Badge
+                      variant="secondary"
+                      className={`text-xs ${getRoleBadgeColor(currentUser.role)} border-0 px-1.5 py-0`}
+                    >
+                      {currentUser.role.replace("_", " ")}
+                    </Badge>
+                  )}
                 </div>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64 animate-fade-in">
               <div className="px-3 py-3 bg-secondary rounded-t-lg">
-                <p className="text-sm font-semibold text-foreground">Admin User</p>
-                <p className="text-xs text-muted-foreground">admin@tsm.university</p>
+                <p className="text-sm font-semibold text-foreground">{currentUser?.name || "User"}</p>
+                <p className="text-xs text-muted-foreground">{currentUser?.email || ""}</p>
+                {currentUser && (
+                  <Badge
+                    variant="secondary"
+                    className={`text-xs mt-1 ${getRoleBadgeColor(currentUser.role)} border-0`}
+                  >
+                    {currentUser.role.replace("_", " ")}
+                  </Badge>
+                )}
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>

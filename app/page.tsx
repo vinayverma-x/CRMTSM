@@ -1,13 +1,10 @@
 "use client"
 
-import { useState } from "react"
 import { useRouter } from "next/navigation"
 import LoginForm from "@/components/login-form"
-import SignupForm from "@/components/signup-form"
 import Image from "next/image"
 
 export default function AuthPage() {
-  const [isSignup, setIsSignup] = useState(false)
   const router = useRouter()
 
   const handleLoginSuccess = () => {
@@ -17,38 +14,31 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo and Header */}
+        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center">
-            <Image src="/tsm-logo.png" alt="TSM University" width={120} height={60} priority className="h-16 w-auto" />
+            <Image 
+              src="/tsm-logo.png" 
+              alt="TSM University" 
+              width={200} 
+              height={100} 
+              priority 
+              className="h-20 md:h-24 w-auto object-contain" 
+            />
           </div>
         </div>
 
         {/* Form Container */}
         <div className="bg-card rounded-xl shadow-lg p-8 border border-border">
-          {isSignup ? (
-            <SignupForm onSignupSuccess={() => setIsSignup(false)} />
-          ) : (
-            <LoginForm onLoginSuccess={handleLoginSuccess} />
-          )}
-
-          {/* Toggle between Login and Signup */}
-          <div className="mt-6 text-center">
-            <p className="text-muted-foreground text-sm">
-              {isSignup ? "Already have an account? " : "Don't have an account? "}
-              <button
-                onClick={() => setIsSignup(!isSignup)}
-                className="text-primary font-semibold hover:text-accent transition-colors"
-              >
-                {isSignup ? "Sign In" : "Create Account"}
-              </button>
-            </p>
-          </div>
+          <LoginForm onLoginSuccess={handleLoginSuccess} />
         </div>
 
         {/* Footer Note */}
         <div className="text-center mt-6 text-xs text-muted-foreground">
           <p>© 2025 TSM CRM. All rights reserved.</p>
+          <p className="mt-2 text-xs">
+            User accounts are created by Super Admin. Contact your administrator for access.
+          </p>
         </div>
       </div>
     </div>

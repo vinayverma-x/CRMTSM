@@ -2,23 +2,29 @@
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { DashboardAnalytics } from "@/lib/types"
 
-const chartData = [
-  { month: "Jan", admissions: 240, target: 300 },
-  { month: "Feb", admissions: 280, target: 300 },
-  { month: "Mar", admissions: 320, target: 300 },
-  { month: "Apr", admissions: 310, target: 300 },
-  { month: "May", admissions: 350, target: 300 },
-  { month: "Jun", admissions: 380, target: 300 },
-  { month: "Jul", admissions: 400, target: 400 },
-  { month: "Aug", admissions: 420, target: 400 },
-  { month: "Sep", admissions: 385, target: 350 },
-  { month: "Oct", admissions: 410, target: 400 },
-  { month: "Nov", admissions: 440, target: 400 },
-  { month: "Dec", admissions: 465, target: 450 },
-]
+interface AdmissionsTrendChartProps {
+  analytics: DashboardAnalytics
+}
 
-export default function AdmissionsTrendChart() {
+// Generate chart data based on analytics
+const generateChartData = (analytics: DashboardAnalytics) => {
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  const baseAdmissions = Math.floor(analytics.totalLeads / 12)
+  return months.map((month, index) => {
+    // Simulate data based on total leads and conversions with consistent pattern
+    const variance = ((index % 3) - 1) * 20 // Consistent pattern instead of random
+    return {
+      month,
+      admissions: Math.max(10, baseAdmissions + variance + Math.floor(index * 2)),
+      target: baseAdmissions + 30,
+    }
+  })
+}
+
+export default function AdmissionsTrendChart({ analytics }: AdmissionsTrendChartProps) {
+  const chartData = generateChartData(analytics)
   return (
     <Card className="transition-all duration-300 ease-in-out hover:shadow-lg">
       <CardHeader className="pb-4">
