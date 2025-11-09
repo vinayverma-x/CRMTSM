@@ -26,7 +26,9 @@ export async function POST(request: NextRequest) {
     if (userResult.rows.length === 0) {
       // Check if it's a student
       const studentResult = await pool.query(
-        `SELECT u.*, s.* 
+        `SELECT u.id as user_id, u.name, u.email, u.password_hash, u.role, u.status, u.created_at, u.last_login, u.phone,
+                s.id as student_id, s.roll_no, s.course, s.year, s.semester, s.admission_date,
+                s.father_name, s.date_of_birth, s.address, s.attendance, s.cgpa, s.photo
          FROM users u 
          JOIN students s ON u.id = s.user_id 
          WHERE LOWER(u.email) = LOWER($1)`,
@@ -39,27 +41,27 @@ export async function POST(request: NextRequest) {
 
       const student = studentResult.rows[0]
       
-      // For demo, accept any password (in production, verify password hash)
-      // if (!await bcrypt.compare(password, student.password_hash)) {
-      //   return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
-      // }
+      // Verify password (for demo, simple comparison - in production, use bcrypt)
+      if (password !== student.password_hash) {
+        return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
+      }
 
       // Update last login
       await pool.query(
         'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
-        [student.id]
+        [student.user_id]
       )
 
       // Generate JWT token
       const token = generateToken({
-        userId: student.id,
+        userId: student.user_id,
         email: student.email,
         role: student.role as any
       })
 
       // Return student data with token
       return NextResponse.json({
-        id: student.id,
+        id: student.user_id,
         name: student.name,
         email: student.email,
         role: student.role,
@@ -75,8 +77,8 @@ export async function POST(request: NextRequest) {
         fatherName: student.father_name,
         dateOfBirth: student.date_of_birth,
         address: student.address,
-        attendance: student.attendance,
-        cgpa: student.cgpa,
+        attendance: student.attendance ? parseFloat(student.attendance) : null,
+        cgpa: student.cgpa ? parseFloat(student.cgpa) : null,
         photo: student.photo,
         token // Include JWT token in response
       })
@@ -84,10 +86,10 @@ export async function POST(request: NextRequest) {
 
     const user = userResult.rows[0]
 
-    // For demo, accept any password (in production, verify password hash)
-    // if (!await bcrypt.compare(password, user.password_hash)) {
-    //   return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
-    // }
+    // Verify password (for demo, simple comparison - in production, use bcrypt)
+    if (password !== user.password_hash) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
+    }
 
     if (user.status !== 'ACTIVE') {
       return NextResponse.json(

@@ -23,14 +23,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized. Only admins, super admins, and counselors can view all students.' }, { status: 403 })
     }
     const result = await pool.query(
-      `SELECT u.*, s.* 
+      `SELECT u.id as user_id, u.name, u.email, u.role, u.status, u.created_at, u.last_login, u.phone,
+              s.id as student_id, s.roll_no, s.course, s.year, s.semester, s.admission_date,
+              s.father_name, s.date_of_birth, s.address, s.attendance, s.cgpa, s.photo
        FROM users u 
        JOIN students s ON u.id = s.user_id 
        ORDER BY u.created_at DESC`
     )
 
     const students = result.rows.map(row => ({
-      id: row.id,
+      id: row.user_id, // Use user_id as the main id
       name: row.name,
       email: row.email,
       role: row.role,
@@ -65,6 +67,17 @@ export async function POST(request: NextRequest) {
     if (!initialized) {
       return NextResponse.json({ error: 'Database initialization failed' }, { status: 500 })
     }
+    // Get authenticated user
+    const user = getUserFromRequest(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized. Please login again.' }, { status: 401 })
+    }
+
+    // Only Super Admin and Admin can create students
+    if (!isCounselorOrAdmin(user.role)) {
+      return NextResponse.json({ error: 'Unauthorized. Only admins and super admins can create students.' }, { status: 403 })
+    }
+
     const {
       name,
       email,
@@ -76,21 +89,24 @@ export async function POST(request: NextRequest) {
       admissionDate,
       fatherName,
       dateOfBirth,
-      address
+      address,
+      photo,
+      password
     } = await request.json()
 
-    if (!name || !email || !rollNo || !course || !year || !semester || !admissionDate) {
+    if (!name || !email || !rollNo || !course || !year || !semester || !admissionDate || !password) {
       return NextResponse.json(
-        { error: 'Name, email, rollNo, course, year, semester, and admissionDate are required' },
+        { error: 'Name, email, rollNo, course, year, semester, admissionDate, and password are required' },
         { status: 400 }
       )
     }
 
-    // Generate ID
-    const id = Math.random().toString(36).substr(2, 9)
+    // Generate IDs
+    const userId = Math.random().toString(36).substr(2, 9)
+    const studentId = Math.random().toString(36).substr(2, 9)
 
-    // Default password (in production, generate secure password and send via email)
-    const passwordHash = 'password123' // In production, hash this properly
+    // Hash password (in production, use proper bcrypt)
+    const passwordHash = password // For now, store as-is (NOT FOR PRODUCTION - should hash)
 
     // Start transaction
     const client = await pool.connect()
@@ -99,18 +115,18 @@ export async function POST(request: NextRequest) {
 
       // Insert user first
       await client.query(
-        `INSERT INTO users (id, name, email, password_hash, role, status, phone)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [id, name, email, passwordHash, 'STUDENT', 'ACTIVE', phone || null]
+        `INSERT INTO users (id, name, email, password_hash, role, status, phone, created_by_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [userId, name, email, passwordHash, 'STUDENT', 'ACTIVE', phone || null, user.id]
       )
 
       // Insert student details
       await client.query(
-        `INSERT INTO students (id, user_id, roll_no, course, year, semester, admission_date, father_name, date_of_birth, address)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        `INSERT INTO students (id, user_id, roll_no, course, year, semester, admission_date, father_name, date_of_birth, address, photo)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [
-          id,
-          id, // user_id same as id
+          studentId,
+          userId, // user_id references users table
           rollNo,
           course,
           year,
@@ -118,7 +134,8 @@ export async function POST(request: NextRequest) {
           admissionDate,
           fatherName || null,
           dateOfBirth || null,
-          address || null
+          address || null,
+          photo || null
         ]
       )
 
@@ -126,17 +143,19 @@ export async function POST(request: NextRequest) {
 
       // Fetch the created student
       const result = await pool.query(
-        `SELECT u.*, s.* 
+        `SELECT u.id as user_id, u.name, u.email, u.role, u.status, u.created_at, u.last_login, u.phone,
+                s.id as student_id, s.roll_no, s.course, s.year, s.semester, s.admission_date,
+                s.father_name, s.date_of_birth, s.address, s.attendance, s.cgpa, s.photo
          FROM users u 
          JOIN students s ON u.id = s.user_id 
          WHERE u.id = $1`,
-        [id]
+        [userId]
       )
 
       const student = result.rows[0]
 
       return NextResponse.json({
-        id: student.id,
+        id: student.user_id,
         name: student.name,
         email: student.email,
         role: student.role,

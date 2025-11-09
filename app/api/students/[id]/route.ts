@@ -8,7 +8,9 @@ export async function GET(
 ) {
   try {
     const result = await pool.query(
-      `SELECT u.*, s.* 
+      `SELECT u.id as user_id, u.name, u.email, u.role, u.status, u.created_at, u.last_login, u.phone,
+              s.id as student_id, s.roll_no, s.course, s.year, s.semester, s.admission_date,
+              s.father_name, s.date_of_birth, s.address, s.attendance, s.cgpa, s.photo
        FROM users u 
        JOIN students s ON u.id = s.user_id 
        WHERE u.id = $1`,
@@ -22,7 +24,7 @@ export async function GET(
     const student = result.rows[0]
 
     return NextResponse.json({
-      id: student.id,
+      id: student.user_id,
       name: student.name,
       email: student.email,
       role: student.role,
@@ -120,7 +122,9 @@ export async function PUT(
 
       // Fetch updated student
       const result = await pool.query(
-        `SELECT u.*, s.* 
+        `SELECT u.id as user_id, u.name, u.email, u.role, u.status, u.created_at, u.last_login, u.phone,
+                s.id as student_id, s.roll_no, s.course, s.year, s.semester, s.admission_date,
+                s.father_name, s.date_of_birth, s.address, s.attendance, s.cgpa, s.photo
          FROM users u 
          JOIN students s ON u.id = s.user_id 
          WHERE u.id = $1`,
@@ -130,7 +134,7 @@ export async function PUT(
       const student = result.rows[0]
 
       return NextResponse.json({
-        id: student.id,
+        id: student.user_id,
         name: student.name,
         email: student.email,
         role: student.role,

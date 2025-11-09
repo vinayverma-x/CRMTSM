@@ -16,7 +16,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Database initialization failed' }, { status: 500 })
     }
     const result = await pool.query(
-      `SELECT * FROM users 
+      `SELECT id, name, email, role, status, created_at, last_login, 
+              assigned_counselor_id, created_by_id, avatar, phone
+       FROM users 
        WHERE role != 'STUDENT' 
        ORDER BY created_at DESC`
     )

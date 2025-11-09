@@ -61,6 +61,11 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('authToken')
+      if (!token) {
+        toast.error("Please login again")
+        router.push("/")
+        return
+      }
       const response = await fetch("/api/users", {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -69,13 +74,22 @@ export default function UsersPage() {
       })
       if (response.ok) {
         const data = await response.json()
+        console.log("Fetched users:", data)
         const currentUser = getCurrentUser()
         // Filter out current user
-        setUsers(data.filter((u: User) => u.id !== currentUser?.id))
-      } else if (response.status === 401 || response.status === 403) {
-        toast.error("Unauthorized. Please login again.")
-        // Redirect to login
-        router.push("/")
+        const filteredUsers = data.filter((u: User) => u.id !== currentUser?.id)
+        console.log("Filtered users:", filteredUsers)
+        setUsers(filteredUsers)
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error("Error response:", response.status, errorData)
+        if (response.status === 401 || response.status === 403) {
+          toast.error(errorData.error || "Unauthorized. Please login again.")
+          // Redirect to login
+          router.push("/")
+        } else {
+          toast.error(errorData.error || "Failed to load users")
+        }
       }
     } catch (error) {
       console.error("Error fetching users:", error)

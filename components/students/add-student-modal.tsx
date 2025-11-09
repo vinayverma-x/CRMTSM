@@ -24,6 +24,11 @@ export function AddStudentModal({ isOpen, onClose, onAddStudent }: AddStudentMod
     email: "",
     contact: "",
     admissionDate: "",
+    fatherName: "",
+    dateOfBirth: "",
+    address: "",
+    photo: "",
+    password: "",
   })
 
   const [successMessage, setSuccessMessage] = useState(false)
@@ -48,6 +53,11 @@ export function AddStudentModal({ isOpen, onClose, onAddStudent }: AddStudentMod
         email: "",
         contact: "",
         admissionDate: "",
+        fatherName: "",
+        dateOfBirth: "",
+        address: "",
+        photo: "",
+        password: "",
       })
     }, 2000)
   }
@@ -60,37 +70,63 @@ export function AddStudentModal({ isOpen, onClose, onAddStudent }: AddStudentMod
             <DialogTitle>Add New Student</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2">
               <div>
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">Name *</Label>
                 <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
               </div>
               <div>
-                <Label htmlFor="rollNo">Roll No</Label>
+                <Label htmlFor="rollNo">Roll No *</Label>
                 <Input id="rollNo" name="rollNo" value={formData.rollNo} onChange={handleChange} required />
               </div>
               <div>
-                <Label htmlFor="course">Course</Label>
+                <Label htmlFor="course">Course *</Label>
                 <Input id="course" name="course" value={formData.course} onChange={handleChange} required />
               </div>
               <div>
-                <Label htmlFor="year">Year</Label>
+                <Label htmlFor="year">Year *</Label>
                 <Input id="year" name="year" value={formData.year} onChange={handleChange} required placeholder="e.g., 1st Year" />
               </div>
               <div>
-                <Label htmlFor="semester">Semester</Label>
-                <Input id="semester" name="semester" value={formData.semester || ""} onChange={handleChange} placeholder="e.g., 1st Semester" />
+                <Label htmlFor="semester">Semester *</Label>
+                <Input id="semester" name="semester" value={formData.semester || ""} onChange={handleChange} required placeholder="e.g., 1st Semester" />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+                <Label htmlFor="email">College Email *</Label>
+                <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required placeholder="student@college.edu" />
+              </div>
+              <div>
+                <Label htmlFor="password">Password *</Label>
+                <Input id="password" name="password" type="password" value={formData.password} onChange={handleChange} required placeholder="Login password" />
               </div>
               <div>
                 <Label htmlFor="contact">Contact</Label>
-                <Input id="contact" name="contact" value={formData.contact} onChange={handleChange} required />
+                <Input id="contact" name="contact" value={formData.contact} onChange={handleChange} />
+              </div>
+              <div>
+                <Label htmlFor="fatherName">Father Name</Label>
+                <Input id="fatherName" name="fatherName" value={formData.fatherName} onChange={handleChange} />
+              </div>
+              <div>
+                <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                <Input
+                  id="dateOfBirth"
+                  name="dateOfBirth"
+                  type="date"
+                  value={formData.dateOfBirth}
+                  onChange={handleChange}
+                />
               </div>
               <div className="col-span-2">
-                <Label htmlFor="admissionDate">Admission Date</Label>
+                <Label htmlFor="address">Address</Label>
+                <Input id="address" name="address" value={formData.address} onChange={handleChange} placeholder="Full address" />
+              </div>
+              <div>
+                <Label htmlFor="photo">Photo URL</Label>
+                <Input id="photo" name="photo" type="url" value={formData.photo} onChange={handleChange} placeholder="https://example.com/photo.jpg" />
+              </div>
+              <div>
+                <Label htmlFor="admissionDate">Admission Date *</Label>
                 <Input
                   id="admissionDate"
                   name="admissionDate"

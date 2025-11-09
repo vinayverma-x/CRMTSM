@@ -24,6 +24,10 @@ export default function StudentsPage() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem('authToken')
+      if (!token) {
+        toast.error("Please login again")
+        return
+      }
       const response = await fetch("/api/students", {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -32,11 +36,16 @@ export default function StudentsPage() {
       })
       if (response.ok) {
         const data = await response.json()
+        console.log("Fetched students:", data)
         setStudents(data)
-      } else if (response.status === 401) {
-        toast.error("Unauthorized. Please login again.")
       } else {
-        toast.error("Failed to load students")
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error("Error response:", response.status, errorData)
+        if (response.status === 401 || response.status === 403) {
+          toast.error(errorData.error || "Unauthorized. Please login again.")
+        } else {
+          toast.error(errorData.error || "Failed to load students")
+        }
       }
     } catch (error) {
       console.error("Error fetching students:", error)
@@ -71,6 +80,11 @@ export default function StudentsPage() {
           year: newStudent.year,
           semester: newStudent.semester || "1st Semester",
           admissionDate: newStudent.admissionDate,
+          fatherName: newStudent.fatherName,
+          dateOfBirth: newStudent.dateOfBirth,
+          address: newStudent.address,
+          photo: newStudent.photo,
+          password: newStudent.password,
         }),
       })
 
