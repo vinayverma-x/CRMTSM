@@ -131,9 +131,10 @@ export default function LeadsTable({ leads, allLeads = leads, onStatusChange }: 
 
       {/* Expanded Row Details */}
       {expandedLeadId && (
-        <div className="bg-muted/30 border-t border-border p-6">
-          {leads.find((l) => l.id === expandedLeadId) && (() => {
-            const lead = leads.find((l) => l.id === expandedLeadId)!
+        <div className="bg-muted/30 border-t border-border p-6 animate-in slide-in-from-top-2">
+          {(() => {
+            const lead = leads.find((l) => l.id === expandedLeadId)
+            if (!lead) return null
             const recommendations = getAIRecommendations(lead.id)
             return (
               <div className="space-y-6">

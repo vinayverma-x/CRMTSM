@@ -25,7 +25,9 @@ export default function SettingsPage() {
     phone: "",
     newPassword: "",
     confirmPassword: "",
+    avatar: "",
   })
+  const [isUploading, setIsUploading] = useState(false)
 
   useEffect(() => {
     const user = getCurrentUser()
@@ -36,25 +38,153 @@ export default function SettingsPage() {
       return
     }
 
-    setProfileData({
-      name: user.name,
-      email: user.email,
-      phone: user.phone || "",
-      newPassword: "",
-      confirmPassword: "",
-    })
+    // Fetch user profile from API
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('authToken')
+        if (!token) return
+
+        const response = await fetch("/api/profile", {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.ok) {
+          const userData = await response.json()
+          setProfileData({
+            name: userData.name || "",
+            email: userData.email || "",
+            phone: userData.phone || "",
+            newPassword: "",
+            confirmPassword: "",
+            avatar: userData.avatar || userData.photo || "",
+          })
+          setCurrentUserState(userData)
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error)
+        // Fallback to local storage user
+        setProfileData({
+          name: user.name,
+          email: user.email,
+          phone: user.phone || "",
+          newPassword: "",
+          confirmPassword: "",
+          avatar: user.avatar || "",
+        })
+      }
+    }
+
+    fetchProfile()
   }, [router])
 
   const handleSystemSettingsUpdate = () => {
     toast.success("System settings updated successfully")
   }
 
-  const handleProfileUpdate = () => {
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        toast.error("Please login again")
+        return
+      }
+
+      // Upload file
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'photo')
+
+      const uploadResponse = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!uploadResponse.ok) {
+        const error = await uploadResponse.json()
+        toast.error(error.error || "Failed to upload photo")
+        return
+      }
+
+      const uploadData = await uploadResponse.json()
+
+      // Update profile with new photo
+      const updateResponse = await fetch("/api/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          avatar: uploadData.filePath,
+        }),
+      })
+
+      if (!updateResponse.ok) {
+        const error = await updateResponse.json()
+        toast.error(error.error || "Failed to update profile")
+        return
+      }
+
+      const updatedUser = await updateResponse.json()
+      setProfileData({ ...profileData, avatar: uploadData.filePath })
+      setCurrentUserState(updatedUser)
+      toast.success("Photo updated successfully")
+    } catch (error) {
+      console.error("Error uploading photo:", error)
+      toast.error("Failed to upload photo")
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleProfileUpdate = async () => {
     if (profileData.newPassword && profileData.newPassword !== profileData.confirmPassword) {
       toast.error("Passwords do not match")
       return
     }
-    toast.success("Profile updated successfully")
+
+    try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        toast.error("Please login again")
+        return
+      }
+
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: profileData.name,
+          email: profileData.email,
+          phone: profileData.phone,
+          password: profileData.newPassword || undefined,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        toast.error(error.error || "Failed to update profile")
+        return
+      }
+
+      const updatedUser = await response.json()
+      setCurrentUserState(updatedUser)
+      setProfileData({ ...profileData, newPassword: "", confirmPassword: "" })
+      toast.success("Profile updated successfully")
+    } catch (error) {
+      console.error("Error updating profile:", error)
+      toast.error("Failed to update profile")
+    }
   }
 
   const isSuperAdmin = currentUser?.role === "SUPER_ADMIN"
@@ -377,20 +507,39 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-6">
-                <div className="w-20 h-20 rounded-full border-2 border-border flex items-center justify-center bg-muted">
-                  <span className="text-2xl font-bold text-primary">
-                    {currentUser?.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase()
-                      .slice(0, 2) || "U"}
-                  </span>
+                <div className="w-20 h-20 rounded-full border-2 border-border flex items-center justify-center bg-muted overflow-hidden">
+                  {profileData.avatar ? (
+                    <img src={profileData.avatar} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-bold text-primary">
+                      {currentUser?.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2) || "U"}
+                    </span>
+                  )}
                 </div>
-                <Button variant="outline" className="gap-2">
-                  <Upload className="h-4 w-4" />
-                  Change Photo
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                    id="photo-upload"
+                    disabled={isUploading}
+                  />
+                  <label htmlFor="photo-upload">
+                    <Button variant="outline" className="gap-2" asChild disabled={isUploading}>
+                      <span>
+                        <Upload className="h-4 w-4" />
+                        {isUploading ? "Uploading..." : "Change Photo"}
+                      </span>
+                    </Button>
+                  </label>
+                  <p className="text-xs text-muted-foreground">JPEG, PNG, GIF, WebP (max 10MB)</p>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>

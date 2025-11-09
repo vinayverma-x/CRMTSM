@@ -8,6 +8,7 @@ import AddLeadModal from "@/components/leads/add-lead-modal"
 import SuccessNotification from "@/components/leads/success-notification"
 import { getCurrentUser, dummyLeads, getLeadsForCounselor, setCurrentUser } from "@/lib/data/dummy-data"
 import { User, Lead } from "@/lib/types"
+import { toast } from "sonner"
 
 export default function LeadsPage() {
   const router = useRouter()
@@ -28,37 +29,95 @@ export default function LeadsPage() {
       return
     }
 
-    // Load leads based on user role
-    let userLeads: Lead[] = []
-    if (user.role === "COUNSELOR") {
-      // Counselors only see their assigned leads
-      userLeads = getLeadsForCounselor(user.id)
-    } else {
-      // Super Admin and Admin see all leads
-      userLeads = dummyLeads
+    // Fetch leads from API
+    const fetchLeads = async () => {
+      try {
+        const token = localStorage.getItem('authToken')
+        if (!token) {
+          router.push("/")
+          return
+        }
+
+        const response = await fetch("/api/leads", {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setAllLeads(data)
+          setLeads(data)
+          setFilteredLeads(data)
+        } else {
+          // Fallback to dummy data if API fails
+          let userLeads: Lead[] = []
+          if (user.role === "COUNSELOR") {
+            userLeads = getLeadsForCounselor(user.id)
+          } else {
+            userLeads = dummyLeads
+          }
+          setAllLeads(userLeads)
+          setLeads(userLeads)
+          setFilteredLeads(userLeads)
+        }
+      } catch (error) {
+        console.error("Error fetching leads:", error)
+        // Fallback to dummy data
+        let userLeads: Lead[] = []
+        if (user.role === "COUNSELOR") {
+          userLeads = getLeadsForCounselor(user.id)
+        } else {
+          userLeads = dummyLeads
+        }
+        setAllLeads(userLeads)
+        setLeads(userLeads)
+        setFilteredLeads(userLeads)
+      }
     }
-    setAllLeads(userLeads)
-    setLeads(userLeads)
-    setFilteredLeads(userLeads)
+
+    fetchLeads()
   }, [router])
 
-  const handleAddLead = (newLead: any) => {
+  const handleAddLead = async (newLead: any) => {
     if (!currentUser) return
 
-    const lead: Lead = {
-      ...newLead,
-      id: Math.random().toString(36).substr(2, 9),
-      assignedCounselorId: newLead.assignedCounselorId || newLead.assignedCounselor || "",
-      createdById: currentUser.id,
-      createdAt: new Date().toISOString().split("T")[0],
+    try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        toast.error("Please login again")
+        return
+      }
+
+      const response = await fetch("/api/leads", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newLead),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        toast.error(error.error || "Failed to create lead")
+        return
+      }
+
+      const createdLead = await response.json()
+      const updatedLeads = [createdLead, ...allLeads]
+      setAllLeads(updatedLeads)
+      setLeads(updatedLeads)
+      setFilteredLeads(updatedLeads)
+      setIsAddLeadOpen(false)
+      setShowSuccess(true)
+      setTimeout(() => setShowSuccess(false), 3000)
+      toast.success("Lead created successfully")
+    } catch (error) {
+      console.error("Error creating lead:", error)
+      toast.error("Failed to create lead")
     }
-    const updatedLeads = [lead, ...allLeads]
-    setAllLeads(updatedLeads)
-    setLeads(updatedLeads)
-    setFilteredLeads(updatedLeads)
-    setIsAddLeadOpen(false)
-    setShowSuccess(true)
-    setTimeout(() => setShowSuccess(false), 3000)
   }
 
   const handleStatusChange = (leadId: string, newStatus: Lead["status"]) => {

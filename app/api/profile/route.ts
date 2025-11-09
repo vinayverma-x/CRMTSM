@@ -92,7 +92,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized. Please login again.' }, { status: 401 })
     }
 
-    const { name, email, phone, password } = await request.json()
+    const body = await request.json()
+    const { name, email, phone, password, avatar, rollNo, course, year, semester, fatherName, dateOfBirth, address, photo } = body
 
     // Update user
     if (password) {
@@ -102,28 +103,28 @@ export async function PUT(request: NextRequest) {
          SET name = COALESCE($1, name),
              email = COALESCE($2, email),
              phone = COALESCE($3, phone),
-             password_hash = $4
-         WHERE id = $5
+             password_hash = $4,
+             avatar = COALESCE($5, avatar)
+         WHERE id = $6
          RETURNING *`,
-        [name, email, phone, password, user.id]
+        [name, email, phone, password, avatar, user.id]
       )
     } else {
       await pool.query(
         `UPDATE users 
          SET name = COALESCE($1, name),
              email = COALESCE($2, email),
-             phone = COALESCE($3, phone)
-         WHERE id = $4
+             phone = COALESCE($3, phone),
+             avatar = COALESCE($4, avatar)
+         WHERE id = $5
          RETURNING *`,
-        [name, email, phone, user.id]
+        [name, email, phone, avatar, user.id]
       )
     }
 
     // If student, update student details if provided
     if (user.role === 'STUDENT') {
-      const { rollNo, course, year, semester, fatherName, dateOfBirth, address } = await request.json()
-      
-      if (rollNo || course || year || semester || fatherName || dateOfBirth || address) {
+      if (rollNo || course || year || semester || fatherName || dateOfBirth || address || photo || avatar) {
         await pool.query(
           `UPDATE students 
            SET roll_no = COALESCE($1, roll_no),
@@ -132,9 +133,10 @@ export async function PUT(request: NextRequest) {
                semester = COALESCE($4, semester),
                father_name = COALESCE($5, father_name),
                date_of_birth = COALESCE($6, date_of_birth),
-               address = COALESCE($7, address)
-           WHERE user_id = $8`,
-          [rollNo, course, year, semester, fatherName, dateOfBirth, address, user.id]
+               address = COALESCE($7, address),
+               photo = COALESCE($8, photo)
+           WHERE user_id = $9`,
+          [rollNo, course, year, semester, fatherName, dateOfBirth, address, photo || avatar, user.id]
         )
       }
     }
