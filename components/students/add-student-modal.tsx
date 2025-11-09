@@ -20,6 +20,7 @@ export function AddStudentModal({ isOpen, onClose, onAddStudent }: AddStudentMod
     rollNo: "",
     course: "",
     year: "",
+    semester: "",
     email: "",
     contact: "",
     admissionDate: "",
@@ -43,6 +44,7 @@ export function AddStudentModal({ isOpen, onClose, onAddStudent }: AddStudentMod
         rollNo: "",
         course: "",
         year: "",
+        semester: "",
         email: "",
         contact: "",
         admissionDate: "",
@@ -73,7 +75,11 @@ export function AddStudentModal({ isOpen, onClose, onAddStudent }: AddStudentMod
               </div>
               <div>
                 <Label htmlFor="year">Year</Label>
-                <Input id="year" name="year" value={formData.year} onChange={handleChange} required />
+                <Input id="year" name="year" value={formData.year} onChange={handleChange} required placeholder="e.g., 1st Year" />
+              </div>
+              <div>
+                <Label htmlFor="semester">Semester</Label>
+                <Input id="semester" name="semester" value={formData.semester || ""} onChange={handleChange} placeholder="e.g., 1st Semester" />
               </div>
               <div>
                 <Label htmlFor="email">Email</Label>

@@ -1,62 +1,42 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { StudentTable } from "@/components/students/student-table"
 import { AddStudentModal } from "@/components/students/add-student-modal"
+import { toast } from "sonner"
+import { Student } from "@/lib/types"
 
 export default function StudentsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [students, setStudents] = useState([
-    {
-      id: 1,
-      name: "Raj Kumar",
-      rollNo: "STU001",
-      course: "B.Tech Computer Science",
-      year: "3rd Year",
-      status: "Active",
-      email: "raj.kumar@tsm.edu",
-      contact: "+91-9876543210",
-      admissionDate: "2022-07-15",
-    },
-    {
-      id: 2,
-      name: "Priya Sharma",
-      rollNo: "STU002",
-      course: "B.Tech Electronics",
-      year: "2nd Year",
-      status: "Active",
-      email: "priya.sharma@tsm.edu",
-      contact: "+91-9876543211",
-      admissionDate: "2023-07-10",
-    },
-    {
-      id: 3,
-      name: "Amit Patel",
-      rollNo: "STU003",
-      course: "B.Tech Mechanical",
-      year: "4th Year",
-      status: "Alumni",
-      email: "amit.patel@tsm.edu",
-      contact: "+91-9876543212",
-      admissionDate: "2021-07-20",
-    },
-    {
-      id: 4,
-      name: "Neha Singh",
-      rollNo: "STU004",
-      course: "MBA Management",
-      year: "1st Year",
-      status: "Active",
-      email: "neha.singh@tsm.edu",
-      contact: "+91-9876543213",
-      admissionDate: "2024-08-01",
-    },
-  ])
+  const [students, setStudents] = useState<Student[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    fetchStudents()
+  }, [])
+
+  const fetchStudents = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch("/api/students")
+      if (response.ok) {
+        const data = await response.json()
+        setStudents(data)
+      } else {
+        toast.error("Failed to load students")
+      }
+    } catch (error) {
+      console.error("Error fetching students:", error)
+      toast.error("Failed to load students")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const filteredStudents = students.filter(
     (student) =>
@@ -65,14 +45,39 @@ export default function StudentsPage() {
       student.course.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleAddStudent = (newStudent: any) => {
-    const student = {
-      ...newStudent,
-      id: students.length + 1,
-      status: "Active",
+  const handleAddStudent = async (newStudent: any) => {
+    try {
+      const response = await fetch("/api/students", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: newStudent.name,
+          email: newStudent.email,
+          phone: newStudent.contact,
+          rollNo: newStudent.rollNo,
+          course: newStudent.course,
+          year: newStudent.year,
+          semester: newStudent.semester || "1st Semester",
+          admissionDate: newStudent.admissionDate,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        toast.error(error.error || "Failed to create student")
+        return
+      }
+
+      const createdStudent = await response.json()
+      setStudents([...students, createdStudent])
+      setIsModalOpen(false)
+      toast.success("Student added successfully!")
+    } catch (error) {
+      console.error("Error creating student:", error)
+      toast.error("Failed to create student")
     }
-    setStudents([...students, student])
-    setIsModalOpen(false)
   }
 
   return (
@@ -106,7 +111,11 @@ export default function StudentsPage() {
 
         {/* Students Table */}
         <Card className="shadow-lg border-0">
-          <StudentTable students={filteredStudents} />
+          {isLoading ? (
+            <div className="p-8 text-center text-gray-500">Loading students...</div>
+          ) : (
+            <StudentTable students={filteredStudents} />
+          )}
         </Card>
 
         {/* Add Student Modal */}

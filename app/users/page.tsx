@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getCurrentUser, dummyUsers, setCurrentUser } from "@/lib/data/dummy-data"
+import { getCurrentUser } from "@/lib/data/dummy-data"
 import { User, UserRole } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -54,31 +54,61 @@ export default function UsersPage() {
       return
     }
 
-    // Load all users except current user
-    setUsers(dummyUsers.filter((u) => u.id !== user.id))
+    // Load all users from API
+    fetchUsers()
   }, [router])
 
-  const handleCreateUser = () => {
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch("/api/users")
+      if (response.ok) {
+        const data = await response.json()
+        const currentUser = getCurrentUser()
+        // Filter out current user
+        setUsers(data.filter((u: User) => u.id !== currentUser?.id))
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error)
+      toast.error("Failed to load users")
+    }
+  }
+
+  const handleCreateUser = async () => {
     if (!formData.name || !formData.email) {
       toast.error("Please fill in all required fields")
       return
     }
 
-    const newUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: formData.name,
-      email: formData.email,
-      role: formData.role,
-      status: "ACTIVE",
-      createdAt: new Date().toISOString().split("T")[0],
-      createdById: currentUser?.id,
-      phone: formData.phone || undefined,
-    }
+    try {
+      const response = await fetch("/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+          phone: formData.phone || undefined,
+          createdById: currentUser?.id,
+        }),
+      })
 
-    setUsers([...users, newUser])
-    setIsCreateOpen(false)
-    setFormData({ name: "", email: "", role: "COUNSELOR", phone: "" })
-    toast.success(`${formData.role === "ADMIN" ? "Admin" : "Counselor"} created successfully`)
+      if (!response.ok) {
+        const error = await response.json()
+        toast.error(error.error || "Failed to create user")
+        return
+      }
+
+      const newUser = await response.json()
+      setUsers([...users, newUser])
+      setIsCreateOpen(false)
+      setFormData({ name: "", email: "", role: "COUNSELOR", phone: "" })
+      toast.success(`${formData.role === "ADMIN" ? "Admin" : "Counselor"} created successfully`)
+    } catch (error) {
+      console.error("Error creating user:", error)
+      toast.error("Failed to create user")
+    }
   }
 
   const handleEditUser = (user: User) => {
@@ -92,47 +122,92 @@ export default function UsersPage() {
     setIsEditOpen(true)
   }
 
-  const handleUpdateUser = () => {
+  const handleUpdateUser = async () => {
     if (!editingUser || !formData.name || !formData.email) {
       toast.error("Please fill in all required fields")
       return
     }
 
-    setUsers(
-      users.map((u) =>
-        u.id === editingUser.id
-          ? {
-              ...u,
-              name: formData.name,
-              email: formData.email,
-              role: formData.role,
-              phone: formData.phone || undefined,
-            }
-          : u
-      )
-    )
-    setIsEditOpen(false)
-    setEditingUser(null)
-    setFormData({ name: "", email: "", role: "COUNSELOR", phone: "" })
-    toast.success("User updated successfully")
-  }
+    try {
+      const response = await fetch(`/api/users/${editingUser.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+          phone: formData.phone || undefined,
+        }),
+      })
 
-  const handleDeleteUser = (user: User) => {
-    if (window.confirm(`Are you sure you want to delete ${user.name}?`)) {
-      setUsers(users.filter((u) => u.id !== user.id))
-      toast.success("User deleted successfully")
+      if (!response.ok) {
+        const error = await response.json()
+        toast.error(error.error || "Failed to update user")
+        return
+      }
+
+      const updatedUser = await response.json()
+      setUsers(users.map((u) => (u.id === editingUser.id ? updatedUser : u)))
+      setIsEditOpen(false)
+      setEditingUser(null)
+      setFormData({ name: "", email: "", role: "COUNSELOR", phone: "" })
+      toast.success("User updated successfully")
+    } catch (error) {
+      console.error("Error updating user:", error)
+      toast.error("Failed to update user")
     }
   }
 
-  const handleStatusToggle = (user: User) => {
-    setUsers(
-      users.map((u) =>
-        u.id === user.id
-          ? { ...u, status: u.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE" }
-          : u
-      )
-    )
-    toast.success(`User ${user.status === "ACTIVE" ? "suspended" : "activated"}`)
+  const handleDeleteUser = async (user: User) => {
+    if (window.confirm(`Are you sure you want to delete ${user.name}?`)) {
+      try {
+        const response = await fetch(`/api/users/${user.id}`, {
+          method: "DELETE",
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          toast.error(error.error || "Failed to delete user")
+          return
+        }
+
+        setUsers(users.filter((u) => u.id !== user.id))
+        toast.success("User deleted successfully")
+      } catch (error) {
+        console.error("Error deleting user:", error)
+        toast.error("Failed to delete user")
+      }
+    }
+  }
+
+  const handleStatusToggle = async (user: User) => {
+    try {
+      const newStatus = user.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE"
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: newStatus,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        toast.error(error.error || "Failed to update user status")
+        return
+      }
+
+      const updatedUser = await response.json()
+      setUsers(users.map((u) => (u.id === user.id ? updatedUser : u)))
+      toast.success(`User ${user.status === "ACTIVE" ? "suspended" : "activated"}`)
+    } catch (error) {
+      console.error("Error updating user status:", error)
+      toast.error("Failed to update user status")
+    }
   }
 
   const getRoleBadgeColor = (role: UserRole) => {

@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { Mail, Lock, Eye, EyeOff, Info, Shield } from "lucide-react"
-import { dummyUsers, setCurrentUser, getStudentByEmail } from "@/lib/data/dummy-data"
+import { setCurrentUser } from "@/lib/data/dummy-data"
 import { User, Student } from "@/lib/types"
 
 interface LoginFormProps {
@@ -27,34 +27,31 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
     setError("")
     setIsLoading(true)
 
-    // Simulate API call with dummy data
-    setTimeout(() => {
+    try {
       if (!email || !password) {
         setError("Please fill in all fields")
         setIsLoading(false)
         return
       }
 
-      // Find user by email (for demo, any password works)
-      // Check both regular users and students
-      let user: User | Student | undefined = dummyUsers.find((u) => u.email.toLowerCase() === email.toLowerCase())
-      
-      // If not found in regular users, check students
-      if (!user) {
-        user = getStudentByEmail(email)
-      }
+      // Call login API
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
 
-      if (!user) {
-        setError("Invalid email or password")
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || "Invalid email or password")
         setIsLoading(false)
         return
       }
 
-      if (user.status !== "ACTIVE") {
-        setError("Your account has been suspended. Please contact administrator.")
-        setIsLoading(false)
-        return
-      }
+      const user: User | Student = data
 
       // Check if 2FA is enabled (for demo, Super Admin and Admin have 2FA)
       const requires2FA = user.role === "SUPER_ADMIN" || user.role === "ADMIN"
@@ -89,7 +86,11 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
       setTwoFACode("")
       setIsLoading(false)
       onLoginSuccess()
-    }, 800)
+    } catch (err) {
+      console.error("Login error:", err)
+      setError("An error occurred. Please try again.")
+      setIsLoading(false)
+    }
   }
 
   return (
