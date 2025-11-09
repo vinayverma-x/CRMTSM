@@ -75,11 +75,18 @@ export default function UsersPage() {
       if (response.ok) {
         const data = await response.json()
         console.log("Fetched users:", data)
-        const currentUser = getCurrentUser()
-        // Filter out current user
-        const filteredUsers = data.filter((u: User) => u.id !== currentUser?.id)
-        console.log("Filtered users:", filteredUsers)
-        setUsers(filteredUsers)
+        console.log("Users count:", Array.isArray(data) ? data.length : 'not an array')
+        if (Array.isArray(data)) {
+          const currentUser = getCurrentUser()
+          // Filter out current user
+          const filteredUsers = data.filter((u: User) => u.id !== currentUser?.id)
+          console.log("Filtered users:", filteredUsers)
+          setUsers(filteredUsers)
+        } else {
+          console.error("Invalid data format:", data)
+          setUsers([])
+          toast.error("Invalid data format received from server")
+        }
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
         console.error("Error response:", response.status, errorData)

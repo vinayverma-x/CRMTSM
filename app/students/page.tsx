@@ -37,7 +37,14 @@ export default function StudentsPage() {
       if (response.ok) {
         const data = await response.json()
         console.log("Fetched students:", data)
-        setStudents(data)
+        console.log("Students count:", Array.isArray(data) ? data.length : 'not an array')
+        if (Array.isArray(data)) {
+          setStudents(data)
+        } else {
+          console.error("Invalid data format:", data)
+          setStudents([])
+          toast.error("Invalid data format received from server")
+        }
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
         console.error("Error response:", response.status, errorData)
@@ -56,10 +63,15 @@ export default function StudentsPage() {
   }
 
   const filteredStudents = students.filter(
-    (student) =>
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.rollNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.course.toLowerCase().includes(searchTerm.toLowerCase()),
+    (student) => {
+      if (!student) return false
+      const searchLower = searchTerm.toLowerCase()
+      return (
+        (student.name || '').toLowerCase().includes(searchLower) ||
+        (student.rollNo || '').toLowerCase().includes(searchLower) ||
+        (student.course || '').toLowerCase().includes(searchLower)
+      )
+    }
   )
 
   const handleAddStudent = async (newStudent: any) => {

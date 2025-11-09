@@ -15,33 +15,40 @@ export async function GET(request: NextRequest) {
     if (!initialized) {
       return NextResponse.json({ error: 'Database initialization failed' }, { status: 500 })
     }
-    const result = await pool.query(
+    let result = await pool.query(
       `SELECT id, name, email, role, status, created_at, last_login, 
               assigned_counselor_id, created_by_id, avatar, phone
        FROM users 
        WHERE role != 'STUDENT' 
        ORDER BY created_at DESC`
     )
+    
+    // If no results, check what's in the database
+    if (result.rows.length === 0) {
+      const allUsers = await pool.query('SELECT id, role FROM users LIMIT 10')
+      const nonStudentUsers = await pool.query(`SELECT id, role FROM users WHERE role != 'STUDENT' LIMIT 10`)
+      console.log(`[GET /api/users] Debug info:`)
+      console.log(`  - All users:`, allUsers.rows.map(r => ({ id: r.id, role: r.role })))
+      console.log(`  - Non-student users:`, nonStudentUsers.rows.map(r => ({ id: r.id, role: r.role })))
+    }
 
-    console.log('Users query result:', result.rows.length, 'rows')
-    console.log('Users data:', result.rows)
+    console.log(`[GET /api/users] Found ${result.rows.length} users (non-students)`)
 
     const users = result.rows.map(user => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      createdAt: user.created_at?.split('T')[0] || user.created_at,
-      lastLogin: user.last_login?.split('T')[0] || user.last_login,
-      assignedCounselorId: user.assigned_counselor_id,
-      createdById: user.created_by_id,
-      avatar: user.avatar,
-      phone: user.phone
+      id: String(user.id),
+      name: user.name || '',
+      email: user.email || '',
+      role: user.role || '',
+      status: user.status || 'ACTIVE',
+      createdAt: user.created_at ? (user.created_at.split ? user.created_at.split('T')[0] : user.created_at) : null,
+      lastLogin: user.last_login ? (user.last_login.split ? user.last_login.split('T')[0] : user.last_login) : null,
+      assignedCounselorId: user.assigned_counselor_id ? String(user.assigned_counselor_id) : null,
+      createdById: user.created_by_id ? String(user.created_by_id) : null,
+      avatar: user.avatar || null,
+      phone: user.phone || null
     }))
 
-    console.log('Mapped users:', users.length)
-
+    console.log(`[GET /api/users] Returning ${users.length} mapped users`)
     return NextResponse.json(users)
   } catch (error: any) {
     console.error('Get users error:', error)

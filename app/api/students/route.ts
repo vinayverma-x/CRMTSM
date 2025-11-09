@@ -22,42 +22,74 @@ export async function GET(request: NextRequest) {
     if (!isCounselorOrAdmin(user.role)) {
       return NextResponse.json({ error: 'Unauthorized. Only admins, super admins, and counselors can view all students.' }, { status: 403 })
     }
-    const result = await pool.query(
+    // First, try a simple JOIN
+    let result = await pool.query(
       `SELECT u.id as user_id, u.name, u.email, u.role, u.status, u.created_at, u.last_login, u.phone,
               s.id as student_id, s.roll_no, s.course, s.year, s.semester, s.admission_date,
               s.father_name, s.date_of_birth, s.address, s.attendance, s.cgpa, s.photo
        FROM users u 
-       JOIN students s ON u.id = s.user_id 
+       INNER JOIN students s ON u.id = s.user_id
+       WHERE u.role = 'STUDENT'
        ORDER BY u.created_at DESC`
     )
 
-    console.log('Students query result:', result.rows.length, 'rows')
-    console.log('Students data:', result.rows)
+    console.log(`[GET /api/students] Found ${result.rows.length} students with simple JOIN`)
+    
+    // If no results, try with type casting
+    if (result.rows.length === 0) {
+      console.log(`[GET /api/students] Trying with type casting...`)
+      try {
+        result = await pool.query(
+          `SELECT u.id as user_id, u.name, u.email, u.role, u.status, u.created_at, u.last_login, u.phone,
+                  s.id as student_id, s.roll_no, s.course, s.year, s.semester, s.admission_date,
+                  s.father_name, s.date_of_birth, s.address, s.attendance, s.cgpa, s.photo
+           FROM users u 
+           INNER JOIN students s ON CAST(u.id AS TEXT) = CAST(s.user_id AS TEXT)
+           WHERE u.role = 'STUDENT'
+           ORDER BY u.created_at DESC`
+        )
+        console.log(`[GET /api/students] Found ${result.rows.length} students with type casting`)
+      } catch (castError) {
+        console.error(`[GET /api/students] Type casting failed:`, castError)
+      }
+    }
+    
+    // If still no results, check what's in the database
+    if (result.rows.length === 0) {
+      const studentCount = await pool.query('SELECT COUNT(*) as count FROM students')
+      const userStudentCount = await pool.query(`SELECT COUNT(*) as count FROM users WHERE role = 'STUDENT'`)
+      const sampleStudents = await pool.query('SELECT id, user_id FROM students LIMIT 5')
+      const sampleUsers = await pool.query(`SELECT id, role FROM users WHERE role = 'STUDENT' LIMIT 5`)
+      console.log(`[GET /api/students] Debug info:`)
+      console.log(`  - Total students in students table: ${studentCount.rows[0].count}`)
+      console.log(`  - Total students in users table: ${userStudentCount.rows[0].count}`)
+      console.log(`  - Sample student IDs:`, sampleStudents.rows.map(r => ({ id: r.id, user_id: r.user_id })))
+      console.log(`  - Sample user IDs:`, sampleUsers.rows.map(r => ({ id: r.id, role: r.role })))
+    }
 
     const students = result.rows.map(row => ({
-      id: row.user_id, // Use user_id as the main id
-      name: row.name,
-      email: row.email,
-      role: row.role,
-      status: row.status,
-      createdAt: row.created_at?.split('T')[0] || row.created_at,
-      lastLogin: row.last_login?.split('T')[0] || row.last_login,
-      phone: row.phone,
-      rollNo: row.roll_no,
-      course: row.course,
-      year: row.year,
-      semester: row.semester,
-      admissionDate: row.admission_date,
-      fatherName: row.father_name,
-      dateOfBirth: row.date_of_birth,
-      address: row.address,
-      attendance: row.attendance ? parseFloat(row.attendance) : null,
-      cgpa: row.cgpa ? parseFloat(row.cgpa) : null,
-      photo: row.photo
+      id: String(row.user_id), // Ensure it's a string
+      name: row.name || '',
+      email: row.email || '',
+      role: row.role || 'STUDENT',
+      status: row.status || 'ACTIVE',
+      createdAt: row.created_at ? (row.created_at.split ? row.created_at.split('T')[0] : row.created_at) : null,
+      lastLogin: row.last_login ? (row.last_login.split ? row.last_login.split('T')[0] : row.last_login) : null,
+      phone: row.phone || null,
+      rollNo: row.roll_no || '',
+      course: row.course || '',
+      year: row.year || '',
+      semester: row.semester || '',
+      admissionDate: row.admission_date || null,
+      fatherName: row.father_name || null,
+      dateOfBirth: row.date_of_birth || null,
+      address: row.address || null,
+      attendance: row.attendance ? parseFloat(String(row.attendance)) : null,
+      cgpa: row.cgpa ? parseFloat(String(row.cgpa)) : null,
+      photo: row.photo || null
     }))
 
-    console.log('Mapped students:', students.length)
-
+    console.log(`[GET /api/students] Returning ${students.length} mapped students`)
     return NextResponse.json(students)
   } catch (error) {
     console.error('Get students error:', error)
