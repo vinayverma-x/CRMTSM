@@ -9,21 +9,14 @@ async function hashPassword(password: string): Promise<string> {
   return password // For now, store plain password (NOT FOR PRODUCTION)
 }
 
-export async function seedDatabase() {
+export async function seedDatabase(forceReseed: boolean = false) {
   try {
     console.log('Starting database seeding...')
-
-    // Check if data already exists - if so, skip seeding
-    const userCount = await pool.query('SELECT COUNT(*) FROM users WHERE role != \'SUPER_ADMIN\'')
-    if (parseInt(userCount.rows[0].count) > 0) {
-      console.log('Database already has data. Skipping seed.')
-      return
-    }
 
     // Hash password for demo (in production, use proper bcrypt)
     const defaultPassword = await hashPassword('password123')
 
-    // Insert Super Admin
+    // Always seed/update Super Admin first
     await pool.query(`
       INSERT INTO users (id, name, email, password_hash, role, status, created_at, last_login, avatar)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -33,7 +26,8 @@ export async function seedDatabase() {
         password_hash = EXCLUDED.password_hash,
         role = EXCLUDED.role,
         status = EXCLUDED.status,
-        last_login = EXCLUDED.last_login
+        last_login = EXCLUDED.last_login,
+        avatar = EXCLUDED.avatar
     `, [
       '1',
       'Super Admin',
@@ -45,8 +39,33 @@ export async function seedDatabase() {
       '2024-11-01',
       '/admin-profile.png'
     ])
+    console.log('Super Admin seeded/updated')
 
-    // Insert Admin
+    // Check if we should skip seeding (unless forceReseed is true)
+    if (!forceReseed) {
+      const adminCount = await pool.query('SELECT COUNT(*) FROM users WHERE role = \'ADMIN\'')
+      const counselorCount = await pool.query('SELECT COUNT(*) FROM users WHERE role = \'COUNSELOR\'')
+      const studentCount = await pool.query('SELECT COUNT(*) FROM students')
+      
+      const hasAdmin = parseInt(adminCount.rows[0].count) > 0
+      const hasCounselor = parseInt(counselorCount.rows[0].count) > 0
+      const hasStudent = parseInt(studentCount.rows[0].count) > 0
+      
+      if (hasAdmin && hasCounselor && hasStudent) {
+        console.log('Database already has seed data. Skipping seed.')
+        console.log(`- Admins: ${adminCount.rows[0].count}`)
+        console.log(`- Counselors: ${counselorCount.rows[0].count}`)
+        console.log(`- Students: ${studentCount.rows[0].count}`)
+        return
+      } else {
+        console.log('Missing seed data. Seeding...')
+        console.log(`- Admins: ${adminCount.rows[0].count}, Counselors: ${counselorCount.rows[0].count}, Students: ${studentCount.rows[0].count}`)
+      }
+    } else {
+      console.log('Force reseed requested. Seeding all data...')
+    }
+
+    // Insert Admin (use ON CONFLICT to handle existing records)
     await pool.query(`
       INSERT INTO users (id, name, email, password_hash, role, status, created_at, last_login, created_by_id, avatar)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -56,7 +75,9 @@ export async function seedDatabase() {
         password_hash = EXCLUDED.password_hash,
         role = EXCLUDED.role,
         status = EXCLUDED.status,
-        last_login = EXCLUDED.last_login
+        last_login = EXCLUDED.last_login,
+        created_by_id = EXCLUDED.created_by_id,
+        avatar = EXCLUDED.avatar
     `, [
       '2',
       'Admin User',
@@ -69,6 +90,7 @@ export async function seedDatabase() {
       '1',
       '/admin-profile.png'
     ])
+    console.log('Admin user seeded/updated')
 
     // Insert Counselors
     const counselors = [
@@ -109,7 +131,8 @@ export async function seedDatabase() {
           role = EXCLUDED.role,
           status = EXCLUDED.status,
           last_login = EXCLUDED.last_login,
-          phone = EXCLUDED.phone
+          phone = EXCLUDED.phone,
+          created_by_id = EXCLUDED.created_by_id
       `, [
         counselor.id,
         counselor.name,
@@ -123,6 +146,7 @@ export async function seedDatabase() {
         counselor.phone
       ])
     }
+    console.log(`${counselors.length} counselors seeded/updated`)
 
     // Insert Students (as users first, then student details)
     const students = [
@@ -186,10 +210,14 @@ export async function seedDatabase() {
     ]
 
     for (const student of students) {
+      // Generate separate IDs for user and student record
+      const userId = student.id
+      const studentId = student.id + '_student'
+
       // Insert user first
       await pool.query(`
-        INSERT INTO users (id, name, email, password_hash, role, status, created_at, last_login, phone)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        INSERT INTO users (id, name, email, password_hash, role, status, created_at, last_login, phone, created_by_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (id) DO UPDATE SET
           name = EXCLUDED.name,
           email = EXCLUDED.email,
@@ -199,7 +227,7 @@ export async function seedDatabase() {
           last_login = EXCLUDED.last_login,
           phone = EXCLUDED.phone
       `, [
-        student.id,
+        userId,
         student.name,
         student.email,
         defaultPassword,
@@ -207,41 +235,67 @@ export async function seedDatabase() {
         'ACTIVE',
         student.created_at,
         student.last_login,
-        student.phone
+        student.phone,
+        '1' // Created by Super Admin
       ])
 
       // Insert student details
-      await pool.query(`
-        INSERT INTO students (id, user_id, roll_no, course, year, semester, admission_date, father_name, date_of_birth, address, attendance, cgpa, photo)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        ON CONFLICT (id) DO UPDATE SET
-          roll_no = EXCLUDED.roll_no,
-          course = EXCLUDED.course,
-          year = EXCLUDED.year,
-          semester = EXCLUDED.semester,
-          admission_date = EXCLUDED.admission_date,
-          father_name = EXCLUDED.father_name,
-          date_of_birth = EXCLUDED.date_of_birth,
-          address = EXCLUDED.address,
-          attendance = EXCLUDED.attendance,
-          cgpa = EXCLUDED.cgpa,
-          photo = EXCLUDED.photo
-      `, [
-        student.id,
-        student.id, // user_id same as id
-        student.rollNo,
-        student.course,
-        student.year,
-        student.semester,
-        student.admissionDate,
-        student.fatherName,
-        student.dateOfBirth,
-        student.address,
-        student.attendance,
-        student.cgpa,
-        student.photo
-      ])
+      // First check if student record exists for this user_id
+      const existingStudent = await pool.query('SELECT id FROM students WHERE user_id = $1', [userId])
+      
+      if (existingStudent.rows.length > 0) {
+        // Update existing student record
+        await pool.query(`
+          UPDATE students SET
+            roll_no = $1,
+            course = $2,
+            year = $3,
+            semester = $4,
+            admission_date = $5,
+            father_name = $6,
+            date_of_birth = $7,
+            address = $8,
+            attendance = $9,
+            cgpa = $10,
+            photo = $11
+          WHERE user_id = $12
+        `, [
+          student.rollNo,
+          student.course,
+          student.year,
+          student.semester,
+          student.admissionDate,
+          student.fatherName,
+          student.dateOfBirth,
+          student.address,
+          student.attendance,
+          student.cgpa,
+          student.photo,
+          userId
+        ])
+      } else {
+        // Insert new student record
+        await pool.query(`
+          INSERT INTO students (id, user_id, roll_no, course, year, semester, admission_date, father_name, date_of_birth, address, attendance, cgpa, photo)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        `, [
+          studentId,
+          userId, // user_id references users table
+          student.rollNo,
+          student.course,
+          student.year,
+          student.semester,
+          student.admissionDate,
+          student.fatherName,
+          student.dateOfBirth,
+          student.address,
+          student.attendance,
+          student.cgpa,
+          student.photo
+        ])
+      }
     }
+    console.log(`${students.length} students seeded/updated`)
 
     console.log('Database seeded successfully!')
   } catch (error) {

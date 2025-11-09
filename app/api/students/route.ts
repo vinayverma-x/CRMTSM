@@ -31,6 +31,9 @@ export async function GET(request: NextRequest) {
        ORDER BY u.created_at DESC`
     )
 
+    console.log('Students query result:', result.rows.length, 'rows')
+    console.log('Students data:', result.rows)
+
     const students = result.rows.map(row => ({
       id: row.user_id, // Use user_id as the main id
       name: row.name,
@@ -52,6 +55,8 @@ export async function GET(request: NextRequest) {
       cgpa: row.cgpa ? parseFloat(row.cgpa) : null,
       photo: row.photo
     }))
+
+    console.log('Mapped students:', students.length)
 
     return NextResponse.json(students)
   } catch (error) {

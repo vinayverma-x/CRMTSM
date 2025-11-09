@@ -23,6 +23,9 @@ export async function GET(request: NextRequest) {
        ORDER BY created_at DESC`
     )
 
+    console.log('Users query result:', result.rows.length, 'rows')
+    console.log('Users data:', result.rows)
+
     const users = result.rows.map(user => ({
       id: user.id,
       name: user.name,
@@ -36,6 +39,8 @@ export async function GET(request: NextRequest) {
       avatar: user.avatar,
       phone: user.phone
     }))
+
+    console.log('Mapped users:', users.length)
 
     return NextResponse.json(users)
   } catch (error: any) {

@@ -38,10 +38,31 @@ export async function ensureDatabaseInitialized(): Promise<boolean> {
 
       // Check if we have any users (if not, seed the database)
       const userCount = await pool.query('SELECT COUNT(*) FROM users')
-      if (parseInt(userCount.rows[0].count) === 0) {
+      const totalUsers = parseInt(userCount.rows[0].count)
+      
+      if (totalUsers === 0) {
         console.log('Database empty. Seeding...')
         const { seedDatabase } = await import('./seed')
         await seedDatabase()
+      } else {
+        // Check if we have seed data (at least 1 admin, 1 counselor, 1 student)
+        const adminCount = await pool.query('SELECT COUNT(*) FROM users WHERE role = \'ADMIN\'')
+        const counselorCount = await pool.query('SELECT COUNT(*) FROM users WHERE role = \'COUNSELOR\'')
+        const studentCount = await pool.query('SELECT COUNT(*) FROM students')
+        
+        const hasAdmin = parseInt(adminCount.rows[0].count) > 0
+        const hasCounselor = parseInt(counselorCount.rows[0].count) > 0
+        const hasStudent = parseInt(studentCount.rows[0].count) > 0
+        
+        if (!hasAdmin || !hasCounselor || !hasStudent) {
+          console.log('Database has users but missing seed data. Seeding...')
+          console.log(`Admin: ${hasAdmin}, Counselor: ${hasCounselor}, Student: ${hasStudent}`)
+          const { seedDatabase } = await import('./seed')
+          // Temporarily allow seeding even if some users exist
+          await seedDatabase()
+        } else {
+          console.log(`Database initialized with ${totalUsers} users (${adminCount.rows[0].count} admins, ${counselorCount.rows[0].count} counselors, ${studentCount.rows[0].count} students)`)
+        }
       }
 
       isInitialized = true
