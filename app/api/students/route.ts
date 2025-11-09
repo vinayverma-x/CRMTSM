@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/db'
 import { ensureDatabaseInitialized } from '@/lib/db/init-check'
+import { getUserFromRequest, isCounselorOrAdmin } from '@/lib/auth'
 
 // GET all students
 export async function GET(request: NextRequest) {
@@ -8,6 +9,18 @@ export async function GET(request: NextRequest) {
     const initialized = await ensureDatabaseInitialized()
     if (!initialized) {
       return NextResponse.json({ error: 'Database initialization failed' }, { status: 500 })
+    }
+
+    // Get authenticated user
+    const user = getUserFromRequest(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized. Please login again.' }, { status: 401 })
+    }
+
+    // Only Admin, Super Admin, and Counselors can view all students
+    // Students can view their own profile via /api/profile
+    if (!isCounselorOrAdmin(user.role)) {
+      return NextResponse.json({ error: 'Unauthorized. Only admins, super admins, and counselors can view all students.' }, { status: 403 })
     }
     const result = await pool.query(
       `SELECT u.*, s.* 

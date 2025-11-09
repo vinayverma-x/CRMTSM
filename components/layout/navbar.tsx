@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
-import { getCurrentUser, setCurrentUser } from "@/lib/data/dummy-data"
+import { getCurrentUser, clearAuth } from "@/lib/data/dummy-data"
 import { User as UserType } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 
@@ -33,8 +33,24 @@ export function Navbar({ onSidebarToggle, sidebarOpen }: NavbarProps) {
     setCurrentUserState(user)
   }, [])
 
-  const handleLogout = () => {
-    setCurrentUser(null)
+  const handleLogout = async () => {
+    // Clear auth tokens
+    clearAuth()
+    // Optionally call logout API
+    try {
+      const token = localStorage.getItem('authToken')
+      if (token) {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+      }
+    } catch (error) {
+      console.error("Logout error:", error)
+    }
+    // Redirect to login
     router.push("/")
   }
 

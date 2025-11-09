@@ -23,10 +23,18 @@ export default function StudentsPage() {
   const fetchStudents = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/students")
+      const token = localStorage.getItem('authToken')
+      const response = await fetch("/api/students", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setStudents(data)
+      } else if (response.status === 401) {
+        toast.error("Unauthorized. Please login again.")
       } else {
         toast.error("Failed to load students")
       }
@@ -47,10 +55,12 @@ export default function StudentsPage() {
 
   const handleAddStudent = async (newStudent: any) => {
     try {
+      const token = localStorage.getItem('authToken')
       const response = await fetch("/api/students", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           name: newStudent.name,

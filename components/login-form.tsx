@@ -77,9 +77,17 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
       const updatedUser: User | Student = {
         ...userToLogin,
         lastLogin: new Date().toISOString().split("T")[0],
+        // Store JWT token if provided
+        token: (data as any).token
       }
       // Save to localStorage using the imported setCurrentUser function
       setCurrentUser(updatedUser)
+      
+      // Store JWT token in localStorage for API requests
+      if ((data as any).token) {
+        localStorage.setItem('authToken', (data as any).token)
+      }
+      
       // Clear local 2FA state variables
       setTempUser(null)
       setShow2FA(false)

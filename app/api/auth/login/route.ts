@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/db'
 import { ensureDatabaseInitialized } from '@/lib/db/init-check'
+import { generateToken } from '@/lib/jwt'
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,7 +50,14 @@ export async function POST(request: NextRequest) {
         [student.id]
       )
 
-      // Return student data
+      // Generate JWT token
+      const token = generateToken({
+        userId: student.id,
+        email: student.email,
+        role: student.role as any
+      })
+
+      // Return student data with token
       return NextResponse.json({
         id: student.id,
         name: student.name,
@@ -69,7 +77,8 @@ export async function POST(request: NextRequest) {
         address: student.address,
         attendance: student.attendance,
         cgpa: student.cgpa,
-        photo: student.photo
+        photo: student.photo,
+        token // Include JWT token in response
       })
     }
 
@@ -93,7 +102,14 @@ export async function POST(request: NextRequest) {
       [user.id]
     )
 
-    // Return user data
+    // Generate JWT token
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role as any
+    })
+
+    // Return user data with token
     return NextResponse.json({
       id: user.id,
       name: user.name,
@@ -105,7 +121,8 @@ export async function POST(request: NextRequest) {
       assignedCounselorId: user.assigned_counselor_id,
       createdById: user.created_by_id,
       avatar: user.avatar,
-      phone: user.phone
+      phone: user.phone,
+      token // Include JWT token in response
     })
   } catch (error: any) {
     console.error('Login error:', error)

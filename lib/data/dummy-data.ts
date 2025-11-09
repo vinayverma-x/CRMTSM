@@ -434,9 +434,27 @@ export function setCurrentUser(user: User | Student | null) {
   if (typeof window === "undefined") return
   if (user) {
     localStorage.setItem("currentUser", JSON.stringify(user))
+    // Also store token separately if it exists
+    if ((user as any).token) {
+      localStorage.setItem("authToken", (user as any).token)
+    }
   } else {
     localStorage.removeItem("currentUser")
+    localStorage.removeItem("authToken")
   }
+}
+
+// Helper function to get auth token
+export function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null
+  return localStorage.getItem("authToken")
+}
+
+// Helper function to clear auth (logout)
+export function clearAuth() {
+  if (typeof window === "undefined") return
+  localStorage.removeItem("currentUser")
+  localStorage.removeItem("authToken")
 }
 
 // Helper function to get users by role

@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/db'
+import { ensureDatabaseInitialized } from '@/lib/db/init-check'
+import { getUserFromRequest, isSuperAdmin } from '@/lib/auth'
 
 // GET user by ID
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Only Super Admin can access user management
+  const user = getUserFromRequest(request)
+  if (!isSuperAdmin(user?.role || null)) {
+    return NextResponse.json({ error: 'Unauthorized. Only Super Admin can access user management.' }, { status: 403 })
+  }
+
   try {
+    const initialized = await ensureDatabaseInitialized()
+    if (!initialized) {
+      return NextResponse.json({ error: 'Database initialization failed' }, { status: 500 })
+    }
     const result = await pool.query('SELECT * FROM users WHERE id = $1', [params.id])
 
     if (result.rows.length === 0) {
@@ -39,7 +51,17 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Only Super Admin can update users
+  const user = getUserFromRequest(request)
+  if (!isSuperAdmin(user?.role || null)) {
+    return NextResponse.json({ error: 'Unauthorized. Only Super Admin can update users.' }, { status: 403 })
+  }
+
   try {
+    const initialized = await ensureDatabaseInitialized()
+    if (!initialized) {
+      return NextResponse.json({ error: 'Database initialization failed' }, { status: 500 })
+    }
     const { name, email, role, phone, status } = await request.json()
 
     const result = await pool.query(
@@ -87,7 +109,17 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Only Super Admin can delete users
+  const user = getUserFromRequest(request)
+  if (!isSuperAdmin(user?.role || null)) {
+    return NextResponse.json({ error: 'Unauthorized. Only Super Admin can delete users.' }, { status: 403 })
+  }
+
   try {
+    const initialized = await ensureDatabaseInitialized()
+    if (!initialized) {
+      return NextResponse.json({ error: 'Database initialization failed' }, { status: 500 })
+    }
     const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING *', [params.id])
 
     if (result.rows.length === 0) {

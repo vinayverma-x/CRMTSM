@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/db'
 import { ensureDatabaseInitialized } from '@/lib/db/init-check'
+import { getUserFromRequest, isSuperAdmin } from '@/lib/auth'
 
 // GET all users (except students)
 export async function GET(request: NextRequest) {
+  // Only Super Admin can access user management
+  const user = getUserFromRequest(request)
+  if (!isSuperAdmin(user?.role || null)) {
+    return NextResponse.json({ error: 'Unauthorized. Only Super Admin can access user management.' }, { status: 403 })
+  }
   try {
     const initialized = await ensureDatabaseInitialized()
     if (!initialized) {
@@ -39,6 +45,12 @@ export async function GET(request: NextRequest) {
 
 // POST create new user
 export async function POST(request: NextRequest) {
+  // Only Super Admin can create users
+  const user = getUserFromRequest(request)
+  if (!isSuperAdmin(user?.role || null)) {
+    return NextResponse.json({ error: 'Unauthorized. Only Super Admin can create users.' }, { status: 403 })
+  }
+
   try {
     const initialized = await ensureDatabaseInitialized()
     if (!initialized) {

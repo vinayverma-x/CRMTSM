@@ -60,12 +60,22 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch("/api/users")
+      const token = localStorage.getItem('authToken')
+      const response = await fetch("/api/users", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         const currentUser = getCurrentUser()
         // Filter out current user
         setUsers(data.filter((u: User) => u.id !== currentUser?.id))
+      } else if (response.status === 401 || response.status === 403) {
+        toast.error("Unauthorized. Please login again.")
+        // Redirect to login
+        router.push("/")
       }
     } catch (error) {
       console.error("Error fetching users:", error)
@@ -80,10 +90,12 @@ export default function UsersPage() {
     }
 
     try {
+      const token = localStorage.getItem('authToken')
       const response = await fetch("/api/users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           name: formData.name,
@@ -129,10 +141,12 @@ export default function UsersPage() {
     }
 
     try {
+      const token = localStorage.getItem('authToken')
       const response = await fetch(`/api/users/${editingUser.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           name: formData.name,
@@ -163,8 +177,12 @@ export default function UsersPage() {
   const handleDeleteUser = async (user: User) => {
     if (window.confirm(`Are you sure you want to delete ${user.name}?`)) {
       try {
+        const token = localStorage.getItem('authToken')
         const response = await fetch(`/api/users/${user.id}`, {
           method: "DELETE",
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         })
 
         if (!response.ok) {
@@ -184,11 +202,13 @@ export default function UsersPage() {
 
   const handleStatusToggle = async (user: User) => {
     try {
+      const token = localStorage.getItem('authToken')
       const newStatus = user.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE"
       const response = await fetch(`/api/users/${user.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           status: newStatus,

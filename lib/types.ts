@@ -17,6 +17,7 @@ export interface User {
   createdById?: string // Who created this user (for Admins/Counselors)
   avatar?: string
   phone?: string
+  token?: string // JWT token (not stored in database, only in response)
 }
 
 // Lead Interface (extended)
