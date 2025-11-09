@@ -4,8 +4,11 @@ import { ensureDatabaseInitialized } from '@/lib/db/init-check'
 
 // GET all students
 export async function GET(request: NextRequest) {
-  await ensureDatabaseInitialized()
   try {
+    const initialized = await ensureDatabaseInitialized()
+    if (!initialized) {
+      return NextResponse.json({ error: 'Database initialization failed' }, { status: 500 })
+    }
     const result = await pool.query(
       `SELECT u.*, s.* 
        FROM users u 
@@ -44,8 +47,11 @@ export async function GET(request: NextRequest) {
 
 // POST create new student
 export async function POST(request: NextRequest) {
-  await ensureDatabaseInitialized()
   try {
+    const initialized = await ensureDatabaseInitialized()
+    if (!initialized) {
+      return NextResponse.json({ error: 'Database initialization failed' }, { status: 500 })
+    }
     const {
       name,
       email,

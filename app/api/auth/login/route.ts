@@ -3,9 +3,13 @@ import { pool } from '@/lib/db'
 import { ensureDatabaseInitialized } from '@/lib/db/init-check'
 
 export async function POST(request: NextRequest) {
-  // Ensure database is initialized
-  await ensureDatabaseInitialized()
   try {
+    // Ensure database is initialized
+    const initialized = await ensureDatabaseInitialized()
+    if (!initialized) {
+      console.error('Database initialization failed')
+      return NextResponse.json({ error: 'Database initialization failed. Please try again.' }, { status: 500 })
+    }
     const { email, password } = await request.json()
 
     if (!email || !password) {
@@ -103,9 +107,17 @@ export async function POST(request: NextRequest) {
       avatar: user.avatar,
       phone: user.phone
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error details:', {
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack
+    })
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+    }, { status: 500 })
   }
 }
 

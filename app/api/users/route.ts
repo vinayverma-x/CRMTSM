@@ -4,8 +4,11 @@ import { ensureDatabaseInitialized } from '@/lib/db/init-check'
 
 // GET all users (except students)
 export async function GET(request: NextRequest) {
-  await ensureDatabaseInitialized()
   try {
+    const initialized = await ensureDatabaseInitialized()
+    if (!initialized) {
+      return NextResponse.json({ error: 'Database initialization failed' }, { status: 500 })
+    }
     const result = await pool.query(
       `SELECT * FROM users 
        WHERE role != 'STUDENT' 
@@ -27,16 +30,20 @@ export async function GET(request: NextRequest) {
     }))
 
     return NextResponse.json(users)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get users error:', error)
+    console.error('Error details:', error?.message, error?.code)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 // POST create new user
 export async function POST(request: NextRequest) {
-  await ensureDatabaseInitialized()
   try {
+    const initialized = await ensureDatabaseInitialized()
+    if (!initialized) {
+      return NextResponse.json({ error: 'Database initialization failed' }, { status: 500 })
+    }
     const { name, email, role, phone, createdById } = await request.json()
 
     if (!name || !email || !role) {
